@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -26,7 +27,7 @@ td{padding:8px 10px;border:1px solid #e2e6ef;background:#fff}
 .autocomplete-wrap{position:relative}
 .autocomplete-list{position:absolute;top:100%;left:0;right:0;z-index:20;margin-top:6px;background:#fff;border:1px solid #cfd6e4;border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,.08);max-height:360px;overflow-y:auto}
 .autocomplete-item{padding:10px 12px;border-bottom:1px solid #eef2fa;cursor:pointer}
-.autocomplete-item:hover,.autocomplete-item.active{background:#eef4ff}
+.autocomplete-item:hover{background:#eef4ff}
 .item-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .item-name{color:#1f2a44}
 .badge{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:700;min-width:92px;box-sizing:border-box}
@@ -103,6 +104,10 @@ function setStatus(m,c){
   el.className="status "+c;
 }
 
+function hideList(){
+  document.getElementById("autocompleteList").classList.add("hidden");
+}
+
 var params=new URLSearchParams(window.location.search);
 var cnx=params.get("CNX")||params.get("cnx")||"";
 var uuid=params.get("UUID")||params.get("uuid")||"";
@@ -174,26 +179,12 @@ function buildUnifiedList(clients,fournisseurs){
 
   clients.forEach(function(i){
     var name=i.Tiers&&i.Tiers.RaisonSociale?i.Tiers.RaisonSociale:i.Lib;
-    result.push({
-      raw:i,
-      code:i.Code||"",
-      name:name||"",
-      type:"client",
-      typeLabel:"Client",
-      label:name||""
-    });
+    result.push({raw:i,code:i.Code||"",name:name||"",type:"client",typeLabel:"Client"});
   });
 
   fournisseurs.forEach(function(i){
     var name=i.Tiers&&i.Tiers.RaisonSociale?i.Tiers.RaisonSociale:i.Lib;
-    result.push({
-      raw:i,
-      code:i.Code||"",
-      name:name||"",
-      type:"fournisseur",
-      typeLabel:"Fournisseur",
-      label:name||""
-    });
+    result.push({raw:i,code:i.Code||"",name:name||"",type:"fournisseur",typeLabel:"Fournisseur"});
   });
 
   result.forEach(function(x){
@@ -202,40 +193,28 @@ function buildUnifiedList(clients,fournisseurs){
   });
 
   result.sort(function(a,b){
-    var nc=a.name.localeCompare(b.name,"fr",{sensitivity:"base"});
-    if(nc!==0) return nc;
-    return a.code.localeCompare(b.code,"fr",{sensitivity:"base"});
+    return a.name.localeCompare(b.name,"fr",{sensitivity:"base"});
   });
 
   allAccounts=result;
   listInfo.textContent=result.length+" compte(s) disponible(s)";
 }
 
-function hideList(){
-  list.classList.add("hidden");
-}
-
 function showMatches(arr){
   list.innerHTML="";
   matches=arr.slice(0,60);
 
-  if(!matches.length){
-    hideList();
-    return;
-  }
+  if(!matches.length){ hideList(); return; }
 
   matches.forEach(function(m,i){
     var row=document.createElement("div");
-    row.className="autocomplete-item " + (m.type==="client" ? "row-client" : "row-fournisseur");
-    row.innerHTML =
-      '<div class="item-line">' +
-        '<span class="badge ' + (m.type==="client" ? 'badge-client' : 'badge-fournisseur') + '">' + m.typeLabel + '</span>' +
-        '<span class="item-name">' + escapeHtml(m.name) + '</span>' +
+    row.className="autocomplete-item "+(m.type==="client"?"row-client":"row-fournisseur");
+    row.innerHTML=
+      '<div class="item-line">'+
+      '<span class="badge '+(m.type==="client"?'badge-client':'badge-fournisseur')+'">'+m.typeLabel+'</span>'+
+      '<span class="item-name">'+escapeHtml(m.name)+'</span>'+
       '</div>';
-    row.onmousedown=function(e){
-      e.preventDefault();
-      selectMatch(i);
-    };
+    row.onmousedown=function(e){e.preventDefault();selectMatch(i);};
     list.appendChild(row);
   });
 
@@ -244,10 +223,8 @@ function showMatches(arr){
 
 function selectMatch(i){
   var m=matches[i];
-  if(!m) return;
-
-  searchInput.value=m.label;
-  selectedText.textContent=m.typeLabel+" — "+m.label;
+  searchInput.value=m.name;
+  selectedText.textContent=m.typeLabel+" — "+m.name;
   selectedPill.classList.remove("hidden");
   hideList();
   renderAccount(m.raw);
@@ -256,10 +233,7 @@ function selectMatch(i){
 function refresh(){
   var q=searchInput.value.toLowerCase().trim();
 
-  if(!q){
-    hideList();
-    return;
-  }
+  if(!q){ hideList(); return; }
 
   var r=allAccounts.filter(function(x){ return x.search.includes(q); });
 
@@ -287,26 +261,19 @@ function loadAccounts(){
     apiGet("/v1/compta/comptes/clients"),
     apiGet("/v1/compta/comptes/fournisseurs")
   ]).then(function(res){
+
     var clients=JSON.parse(res[0]);
     var fournisseurs=JSON.parse(res[1]);
 
-    if(!Array.isArray(clients) || !Array.isArray(fournisseurs)){
-      throw new Error("Réponse inattendue");
-    }
-
     buildUnifiedList(clients,fournisseurs);
     searchInput.disabled=false;
+
     setStatus("Connexion SSO valide","ok");
+
   }).catch(function(e){
     setStatus(e.message,"err");
   });
 }
-
-searchInput.addEventListener("focus",function(){
-  if(!searchInput.disabled && searchInput.value.trim()!==""){
-    refresh();
-  }
-});
 
 searchInput.addEventListener("input",function(){
   selectedPill.classList.add("hidden");
@@ -315,7 +282,8 @@ searchInput.addEventListener("input",function(){
   refresh();
 });
 
-clearSelection.addEventListener("click",function(){
+clearSelection.addEventListener("click",function(e){
+  e.preventDefault();
   clearSelected();
   searchInput.focus();
 });
