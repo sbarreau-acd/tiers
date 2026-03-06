@@ -55,12 +55,49 @@ input:disabled{background:#f2f4f8;color:#666}
   border-color:#003366;
 }
 
+
+.conn-form{
+  display:grid;
+  grid-template-columns: 1fr 1fr auto auto;
+  gap:10px;
+  align-items:end;
+}
+.conn-field label{
+  display:block;
+  font-weight:600;
+  margin-bottom:6px;
+  color:#003366;
+}
+.conn-field input{
+  width:100%;
+}
+@media (max-width:900px){
+  .conn-form{grid-template-columns:1fr;}
+}
+
 </style>
 </head>
 <body>
 <div class="box">
   <h2>Sélection d’un compte client ou fournisseur</h2>
   <div id="status" class="status info">Chargement...</div>
+
+  <div class="card" id="connectionCard">
+    <h3>Connexion API</h3>
+    <div class="conn-form">
+      <div class="conn-field">
+        <label for="apiUrlInput">URL API</label>
+        <input id="apiUrlInput" type="text" placeholder="https://.../cnx/api">
+      </div>
+      <div class="conn-field">
+        <label for="uuidInput">UUID</label>
+        <input id="uuidInput" type="text" placeholder="UUID">
+      </div>
+      <button id="btnConnect" class="btn btn-fournisseur" type="button">Valider la connexion</button>
+      <button id="btnClearSaved" class="btn" style="background:#6b7280" type="button">Effacer la connexion</button>
+    </div>
+  </div>
+
 
   <div class="card">
     <h3>Dossier courant</h3>
