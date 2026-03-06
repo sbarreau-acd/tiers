@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -138,6 +137,7 @@ function apiGet(path){
 
 var allAccounts=[];
 var matches=[];
+var selectedAccount=null;
 var dossierTable=document.getElementById("dossierTable");
 var searchInput=document.getElementById("searchInput");
 var list=document.getElementById("autocompleteList");
@@ -223,6 +223,7 @@ function showMatches(arr){
 
 function selectMatch(i){
   var m=matches[i];
+  selectedAccount=m.raw;
   searchInput.value=m.name;
   selectedText.textContent=m.typeLabel+" — "+m.name;
   selectedPill.classList.remove("hidden");
@@ -247,7 +248,9 @@ function refresh(){
 }
 
 function clearSelected(){
+  selectedAccount=null;
   searchInput.value="";
+  selectedText.textContent="";
   selectedPill.classList.add("hidden");
   accountCard.classList.add("hidden");
   accountTable.innerHTML="";
@@ -276,7 +279,9 @@ function loadAccounts(){
 }
 
 searchInput.addEventListener("input",function(){
+  selectedAccount=null;
   selectedPill.classList.add("hidden");
+  selectedText.textContent="";
   accountCard.classList.add("hidden");
   accountTable.innerHTML="";
   refresh();
