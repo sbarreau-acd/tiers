@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>SSO - Code dossier</title>
+
+<style>
+body{
+  font-family: Segoe UI, Arial;
+  background:#f5f6f8;
+  padding:40px;
+}
+
+.box{
+  background:#fff;
+  padding:30px;
+  border-radius:8px;
+  border:1px solid #ddd;
+  max-width:600px;
+}
+
+h2{
+  margin-top:0;
+  color:#003366;
+}
+
+.result{
+  margin-top:20px;
+  font-size:20px;
+  font-weight:bold;
+  color:#0b6b2e;
+}
+
+.error{
+  margin-top:20px;
+  color:#b00020;
+  font-weight:bold;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="box">
+  <h2>Connexion SSO</h2>
+
+  <div id="status">Connexion en cours...</div>
+
+  <div id="result" class="result"></div>
+  <div id="error" class="error"></div>
+</div>
+
+<script>
+
+(function(){
+
+function normalize(u){
+  return (u||"").replace(/\/+$/,"");
+}
+
+var params = new URLSearchParams(window.location.search);
+
+var cnx = params.get("CNX") || params.get("cnx") || "";
+var uuid = params.get("UUID") || params.get("uuid") || "";
+
+var referrer = document.referrer;
+
+var apiUrl = null;
+
+if(referrer && cnx){
+  try{
+    var r = new URL(referrer);
+    apiUrl = normalize(r.origin + "/" + cnx + "/api");
+  }catch(e){}
+}
+
+if(!apiUrl || !uuid){
+  document.getElementById("status").textContent = "";
+  document.getElementById("error").textContent = "Paramètres CNX ou UUID manquants.";
+  return;
+}
+
+fetch(apiUrl + "/v1/authentification/uuid",{
+  method:"POST",
+  headers:{
+    "accept":"text/plain",
+    "Content-Type":"application/json-patch+json"
+  },
+  body: JSON.stringify({UUID: uuid})
+})
+.then(function(r){
+  return r.text().then(function(t){
+    return {ok:r.ok,text:t};
+  });
+})
+.then(function(res){
+
+  if(!res.ok){
+    throw new Error("Erreur d'authentification");
+  }
+
+  var data = JSON.parse(res.text);
+
+  if(data.VariablesSession && data.VariablesSession.ADR_CODE){
+
+    document.getElementById("status").textContent = "Connexion SSO valide";
+
+    document.getElementById("result").textContent =
+      "Code dossier : " + data.VariablesSession.ADR_CODE;
+
+  }else{
+
+    throw new Error("ADR_CODE non présent dans la réponse");
+
+  }
+
+})
+.catch(function(err){
+
+  document.getElementById("status").textContent = "";
+  document.getElementById("error").textContent = err.message;
+
+});
+
+})();
+
+</script>
+
+</body>
+</html>
