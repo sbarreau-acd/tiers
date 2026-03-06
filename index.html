@@ -55,7 +55,15 @@ input:disabled{background:#f2f4f8;color:#666}
 
   <div class="card">
     <div class="autocomplete-wrap">
-      <label for="searchInput">Compte</label>
+      
+<div style="margin-bottom:10px;">
+<label style="margin-right:10px;font-weight:600;">Type :</label>
+<label style="margin-right:12px;"><input type="radio" name="typeFilter" value="all" checked> Tous</label>
+<label style="margin-right:12px;"><input type="radio" name="typeFilter" value="client"> Client</label>
+<label><input type="radio" name="typeFilter" value="fournisseur"> Fournisseur</label>
+</div>
+
+<label for="searchInput">Compte</label>
       <input id="searchInput" placeholder="Rechercher un client ou un fournisseur..." autocomplete="off" disabled>
       <div id="autocompleteList" class="autocomplete-list hidden"></div>
       <div id="selectedPill" class="selected-pill hidden">
@@ -190,6 +198,21 @@ function formatEuro(v){
   }
 }
 
+
+function formatDateFR(v){
+  if(!v) return "";
+  try{
+    const d = new Date(v);
+    if(isNaN(d)) return v;
+    const j = String(d.getDate()).padStart(2,'0');
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const a = d.getFullYear();
+    return j + "/" + m + "/" + a;
+  }catch(e){
+    return v;
+  }
+}
+
 function stringify(v){
   return (v===undefined||v===null||String(v).trim()==="") ? "" : String(v);
 }
@@ -224,7 +247,7 @@ function renderInsee(data){
   addRow(inseeTable,"Adresse",siege.adresse);
   addRow(inseeTable,"Complément",siege.complement_adresse);
   addRow(inseeTable,"Catégorie entreprise",result.categorie_entreprise);
-  addRow(inseeTable,"DateMAJ Insee",result.date_mise_a_jour_insee);
+  addRow(inseeTable,"DateMAJ Insee",formatDateFR(result.date_mise_a_jour_insee));
 
   var financesRaw = result.finances;
   var finances = [];
@@ -395,10 +418,16 @@ searchInput.addEventListener("input",function(){
     hideList();
     return;
   }
+  var selectedType = document.querySelector('input[name="typeFilter"]:checked').value;
+
   var filtered=allAccounts.filter(function(a){
     var lib=(a.raw&&a.raw.Lib)||"";
     var code=(a.raw&&a.raw.Code)||"";
-    return a.name.toLowerCase().includes(q) || lib.toLowerCase().includes(q) || code.toLowerCase().includes(q);
+
+    var matchText = a.name.toLowerCase().includes(q) || lib.toLowerCase().includes(q) || code.toLowerCase().includes(q);
+    var matchType = (selectedType==="all") || (a.type===selectedType);
+
+    return matchText && matchType;
   });
   showMatches(filtered);
 });
