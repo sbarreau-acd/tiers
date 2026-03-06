@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>SSO - Informations dossier</title>
 <meta name="referrer" content="strict-origin-when-cross-origin">
+<link rel="icon" href="data:,">
 <style>
 body{font-family:Segoe UI,Arial,sans-serif;padding:40px;background:#f5f6f8;color:#1f2937}
 .box{background:#fff;padding:24px;border-radius:10px;max-width:760px;border:1px solid #d9dee8;box-shadow:0 2px 10px rgba(0,0,0,.04)}
@@ -31,7 +32,7 @@ h2{margin:0 0 18px;color:#003366}
   function normalize(u){ return (u||"").replace(/\/+$/,""); }
   function escapeHtml(s){
     return String(s==null?"":s).replace(/[&<>"']/g,function(c){
-      return {"&":"&amp;","<":"&lt;",">":"&gt;",""":"&quot;","'":"&#39;"}[c];
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
     });
   }
 
