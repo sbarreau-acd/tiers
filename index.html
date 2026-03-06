@@ -23,6 +23,10 @@ th{text-align:left;width:220px;background:#eef2fa;padding:8px 10px;border:1px so
 td{padding:8px 10px;border:1px solid #e2e6ef;background:#fff}
 .hidden{display:none}
 
+.toolbar{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:10px}
+.btn{border:0;background:#003366;color:#fff;border-radius:8px;padding:10px 14px;cursor:pointer;font:inherit;font-weight:600}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
 .autocomplete-wrap{position:relative}
 .autocomplete-list{position:absolute;top:100%;left:0;right:0;z-index:20;margin-top:6px;background:#fff;border:1px solid #cfd6e4;border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,.08);max-height:360px;overflow-y:auto}
 .autocomplete-item{padding:10px 12px;border-bottom:1px solid #eef2fa;cursor:pointer}
@@ -51,6 +55,10 @@ td{padding:8px 10px;border:1px solid #e2e6ef;background:#fff}
 <div class="card">
 <h3>Dossier courant</h3>
 <table id="dossierTable"></table>
+</div>
+
+<div class="toolbar">
+  <button id="btnExportCsv" class="btn" type="button" disabled>Exporter clients + fournisseurs en CSV</button>
 </div>
 
 <div class="selection-layout">
@@ -107,6 +115,23 @@ function hideList(){
   document.getElementById("autocompleteList").classList.add("hidden");
 }
 
+function csvEscape(value){
+  var s = value==null ? "" : String(value);
+  return '"' + s.replace(/"/g, '""') + '"';
+}
+
+function downloadTextFile(filename, content, mimeType){
+  var blob = new Blob([content], {type: mimeType});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+}
+
 var params=new URLSearchParams(window.location.search);
 var cnx=params.get("CNX")||params.get("cnx")||"";
 var uuid=params.get("UUID")||params.get("uuid")||"";
@@ -147,6 +172,7 @@ var selectedText=document.getElementById("selectedText");
 var selectedPill=document.getElementById("selectedPill");
 var clearSelection=document.getElementById("clearSelection");
 var listInfo=document.getElementById("listInfo");
+var btnExportCsv=document.getElementById("btnExportCsv");
 
 function renderDossier(d){
   dossierTable.innerHTML="";
@@ -257,6 +283,45 @@ function clearSelected(){
   hideList();
 }
 
+function exportCsv(){
+  if(!allAccounts.length) return;
+
+  var lines = [];
+  lines.push([
+    "Type",
+    "Code",
+    "Libellé",
+    "Raison sociale",
+    "SIRET",
+    "TVA Intracom",
+    "Email",
+    "Téléphone"
+  ].map(csvEscape).join(";"));
+
+  allAccounts.forEach(function(item){
+    var raw = item.raw || {};
+    var tiers = raw.Tiers || {};
+    lines.push([
+      raw.AccountTypeLabel || "",
+      raw.Code || "",
+      raw.Lib || "",
+      tiers.RaisonSociale || "",
+      tiers.Siren || "",
+      tiers.NumeroIntracom || "",
+      tiers.Email || "",
+      tiers.Telephone || ""
+    ].map(csvEscape).join(";"));
+  });
+
+  var today = new Date();
+  var pad = function(n){ return String(n).padStart(2,"0"); };
+  var filename = "comptes_clients_fournisseurs_" +
+    today.getFullYear() + pad(today.getMonth()+1) + pad(today.getDate()) + "_" +
+    pad(today.getHours()) + pad(today.getMinutes()) + ".csv";
+
+  downloadTextFile(filename, "\uFEFF" + lines.join("\r\n"), "text/csv;charset=utf-8;");
+}
+
 function loadAccounts(){
   setStatus("Chargement des comptes clients et fournisseurs...","info");
 
@@ -270,6 +335,7 @@ function loadAccounts(){
 
     buildUnifiedList(clients,fournisseurs);
     searchInput.disabled=false;
+    btnExportCsv.disabled = allAccounts.length === 0;
 
     setStatus("Connexion SSO valide","ok");
 
@@ -292,6 +358,8 @@ clearSelection.addEventListener("click",function(e){
   clearSelected();
   searchInput.focus();
 });
+
+btnExportCsv.addEventListener("click", exportCsv);
 
 document.addEventListener("click",function(e){
   if(!e.target.closest(".autocomplete-wrap")){
