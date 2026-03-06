@@ -42,6 +42,9 @@ h2{
   margin-bottom:6px;
   color:#003366;
 }
+.field.full{
+  grid-column:1 / -1;
+}
 select{
   width:100%;
   padding:10px 12px;
@@ -131,9 +134,10 @@ td{
             <option value="fournisseurs">Fournisseur</option>
           </select>
         </div>
- </div>
-         <div class="controls">
-        <div class="field">
+      </div>
+
+      <div class="controls">
+        <div class="field full">
           <label for="accountSelect">Compte</label>
           <select id="accountSelect" disabled>
             <option value="">Sélectionner un compte...</option>
@@ -252,7 +256,7 @@ td{
     items.forEach(function(item, index){
       var option = document.createElement("option");
       option.value = String(index);
-      option.textContent = item.Lib || item.Code || (type === "clients" ? "Client sans libellé" : "Fournisseur sans libellé");
+      option.textContent = item.Lib || item.Code || "Compte";
       accountSelect.appendChild(option);
     });
 
