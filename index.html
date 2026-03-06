@@ -205,7 +205,23 @@ function renderInsee(data){
   addRow(inseeTable,"Catégorie entreprise",result.categorie_entreprise);
   addRow(inseeTable,"DateMAJ Insee",result.date_mise_a_jour_insee);
 
-  var finances=Array.isArray(result.finances)?result.finances.slice():[];
+  var financesRaw = result.finances;
+  var finances = [];
+
+  if(Array.isArray(financesRaw)){
+    finances = financesRaw.slice();
+  } else if(financesRaw && typeof financesRaw === "object"){
+    Object.keys(financesRaw).forEach(function(key){
+      var item = financesRaw[key] || {};
+      var clone = {};
+      Object.keys(item).forEach(function(k){ clone[k] = item[k]; });
+      if(clone.annee === undefined || clone.annee === null || String(clone.annee).trim() === ""){
+        clone.annee = key;
+      }
+      finances.push(clone);
+    });
+  }
+
   if(finances.length){
     finances.sort(function(a,b){ return sortKey(b)-sortKey(a); });
     finances.slice(0,3).forEach(function(f){
