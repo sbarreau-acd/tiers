@@ -2,130 +2,111 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>SSO - Code dossier</title>
-
+<title>SSO - Informations dossier</title>
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <style>
-body{
-  font-family: Segoe UI, Arial;
-  background:#f5f6f8;
-  padding:40px;
-}
-
-.box{
-  background:#fff;
-  padding:30px;
-  border-radius:8px;
-  border:1px solid #ddd;
-  max-width:600px;
-}
-
-h2{
-  margin-top:0;
-  color:#003366;
-}
-
-.result{
-  margin-top:20px;
-  font-size:20px;
-  font-weight:bold;
-  color:#0b6b2e;
-}
-
-.error{
-  margin-top:20px;
-  color:#b00020;
-  font-weight:bold;
-}
+body{font-family:Segoe UI,Arial,sans-serif;padding:40px;background:#f5f6f8;color:#1f2937}
+.box{background:#fff;padding:24px;border-radius:10px;max-width:760px;border:1px solid #d9dee8;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+h2{margin:0 0 18px;color:#003366}
+.status{margin-bottom:16px;font-weight:600}
+.ok{color:#0b6b2e}
+.err{color:#b00020}
+.table{width:100%;border-collapse:collapse;margin-top:10px}
+.table th,.table td{border:1px solid #e2e6ef;padding:10px 12px;text-align:left;vertical-align:top}
+.table th{background:#eef2fa;color:#1f2a44;width:220px}
+.hidden{display:none}
+.small{font-size:12px;color:#6b7280;margin-top:8px}
 </style>
-
 </head>
-
 <body>
-
 <div class="box">
   <h2>Connexion SSO</h2>
-
-  <div id="status">Connexion en cours...</div>
-
-  <div id="result" class="result"></div>
-  <div id="error" class="error"></div>
+  <div id="status" class="status">Connexion en cours...</div>
+  <table id="resultTable" class="table hidden"></table>
+  <div id="error" class="err"></div>
+  <div id="debug" class="small"></div>
 </div>
-
 <script>
-
 (function(){
+  function normalize(u){ return (u||"").replace(/\/+$/,""); }
+  function escapeHtml(s){
+    return String(s==null?"":s).replace(/[&<>"']/g,function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",""":"&quot;","'":"&#39;"}[c];
+    });
+  }
 
-function normalize(u){
-  return (u||"").replace(/\/+$/,"");
-}
+  var params = new URLSearchParams(window.location.search);
+  var cnx = params.get("CNX") || params.get("cnx") || "";
+  var uuid = params.get("UUID") || params.get("uuid") || "";
+  var referrer = document.referrer || "";
+  var apiOverride = params.get("api");
+  var apiUrl = null;
 
-var params = new URLSearchParams(window.location.search);
+  if(apiOverride){
+    apiUrl = normalize(apiOverride);
+  }else if(referrer && cnx){
+    try{
+      var r = new URL(referrer);
+      apiUrl = normalize(r.origin + "/" + cnx + "/api");
+    }catch(e){}
+  }
 
-var cnx = params.get("CNX") || params.get("cnx") || "";
-var uuid = params.get("UUID") || params.get("uuid") || "";
+  var statusEl = document.getElementById("status");
+  var errorEl = document.getElementById("error");
+  var debugEl = document.getElementById("debug");
+  var tableEl = document.getElementById("resultTable");
 
-var referrer = document.referrer;
+  if(!apiUrl || !uuid){
+    statusEl.textContent = "";
+    errorEl.textContent = "Paramètres CNX ou UUID manquants.";
+    debugEl.textContent = "L'URL doit contenir au minimum CNX et UUID.";
+    return;
+  }
 
-var apiUrl = null;
+  debugEl.textContent = "Endpoint appelé : " + apiUrl + "/v1/sessions/dossier";
 
-if(referrer && cnx){
-  try{
-    var r = new URL(referrer);
-    apiUrl = normalize(r.origin + "/" + cnx + "/api");
-  }catch(e){}
-}
+  fetch(apiUrl + "/v1/sessions/dossier", {
+    method: "GET",
+    headers: {
+      "accept": "text/plain",
+      "UUID": uuid
+    }
+  })
+  .then(function(r){
+    return r.text().then(function(t){
+      return { ok:r.ok, status:r.status, text:t };
+    });
+  })
+  .then(function(res){
+    if(!res.ok){
+      throw new Error("Erreur HTTP " + res.status);
+    }
 
-if(!apiUrl || !uuid){
-  document.getElementById("status").textContent = "";
-  document.getElementById("error").textContent = "Paramètres CNX ou UUID manquants.";
-  return;
-}
+    var data = JSON.parse(res.text);
+    var rows = [
+      ["Nom", data.Nom],
+      ["Prénom", data.Prenom],
+      ["Adresse ligne 1", data.Adresse1],
+      ["Adresse ligne 2", data.Adresse2],
+      ["Code postal", data.CodePostal],
+      ["Ville", data.Ville],
+      ["Siret", data.SIRET]
+    ];
 
-fetch(apiUrl + "/v1/authentification/uuid",{
-  method:"POST",
-  headers:{
-    "accept":"text/plain",
-    "Content-Type":"application/json-patch+json"
-  },
-  body: JSON.stringify({UUID: uuid})
-})
-.then(function(r){
-  return r.text().then(function(t){
-    return {ok:r.ok,text:t};
+    var html = "";
+    rows.forEach(function(row){
+      html += "<tr><th>" + escapeHtml(row[0]) + "</th><td>" + escapeHtml(row[1]) + "</td></tr>";
+    });
+
+    tableEl.innerHTML = html;
+    tableEl.classList.remove("hidden");
+    statusEl.innerHTML = '<span class="ok">Connexion SSO valide</span>';
+  })
+  .catch(function(err){
+    statusEl.textContent = "";
+    errorEl.textContent = err.message || "Erreur lors de l'appel API";
   });
-})
-.then(function(res){
-
-  if(!res.ok){
-    throw new Error("Erreur d'authentification");
-  }
-
-  var data = JSON.parse(res.text);
-
-  if(data.VariablesSession && data.VariablesSession.ADR_CODE){
-
-    document.getElementById("status").textContent = "Connexion SSO valide";
-
-    document.getElementById("result").textContent =
-      "Code dossier : " + data.VariablesSession.ADR_CODE;
-
-  }else{
-
-    throw new Error("ADR_CODE non présent dans la réponse");
-
-  }
-
-})
-.catch(function(err){
-
-  document.getElementById("status").textContent = "";
-  document.getElementById("error").textContent = err.message;
-
-});
-
 })();
-
 </script>
-
 </body>
 </html>
