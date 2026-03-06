@@ -27,13 +27,15 @@ input:disabled{background:#f2f4f8;color:#666}
 .autocomplete-list{position:absolute;background:#fff;border:1px solid #cfd6e4;border-radius:8px;max-height:300px;overflow:auto;width:100%;z-index:20;box-shadow:0 8px 20px rgba(0,0,0,.08);margin-top:6px}
 .autocomplete-item{padding:10px;cursor:pointer;border-bottom:1px solid #eee}
 .autocomplete-item:hover{background:#eef4ff}
+.autocomplete-item.active{background:#dbe8ff}
 .badge{border-radius:999px;padding:2px 8px;font-size:12px;font-weight:700;margin-right:8px;display:inline-flex;min-width:92px;justify-content:center}
 .badge-client{background:#e6f4ea;color:#0b6b2e;border:1px solid #0b6b2e}
 .badge-fournisseur{background:#eaf2ff;color:#0b4ea2;border:1px solid #0b4ea2}
+.badge-siren{background:#fff7e6;color:#9a6700;border:1px solid #e5c07b}
 .value-badge{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;min-width:92px;box-sizing:border-box}
 .selected-pill{margin-top:10px;background:#eef4ff;padding:6px 10px;border-radius:999px;display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap}
 .clear-btn{background:#003366;color:#fff;border:0;border-radius:999px;padding:2px 8px;cursor:pointer}
-.subtle{font-size:13px;color:#5b6575;margin-top:4px}
+.subtle{font-size:13px;color:#5b6575;margin-top:4px;display:block}.stats-visible{font-size:14px;color:#003366;font-weight:700;margin-top:6px;display:block;background:#eef4ff;border:1px solid #cfe0ff;border-radius:8px;padding:6px 10px}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 .filter-pills{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .filter-pills .filter-label{font-weight:600;color:#003366}
@@ -45,6 +47,27 @@ input:disabled{background:#f2f4f8;color:#666}
 .conn-form{display:grid;grid-template-columns:1fr 1fr auto auto;gap:10px;align-items:end}
 .conn-field label{display:block;font-weight:600;margin-bottom:6px;color:#003366}
 @media (max-width:900px){.grid-2{grid-template-columns:1fr}.conn-form{grid-template-columns:1fr}}
+
+.search-line{
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+.search-line input{
+  flex:1;
+}
+
+
+/* Limit search field to about 50 characters width */
+#searchInput{
+  max-width:50ch;
+}
+.search-line{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
 </style>
 </head>
 <body>
@@ -64,6 +87,7 @@ input:disabled{background:#f2f4f8;color:#666}
         <input id="uuidInput" type="text" placeholder="UUID">
       </div>
       <button id="btnConnect" class="btn btn-fournisseur" type="button">Valider la connexion</button>
+      </div>
       <button id="btnClearSaved" class="btn" style="background:#6b7280" type="button">Effacer la connexion</button>
     </div>
   </div>
@@ -97,11 +121,15 @@ input:disabled{background:#f2f4f8;color:#666}
 
     <div class="autocomplete-wrap">
       <label for="searchInput">Compte</label>
-      <input id="searchInput" placeholder="Rechercher un client ou un fournisseur..." autocomplete="off" disabled>
+      <div class="search-line">
+        <input id="searchInput" placeholder="Rechercher un client ou un fournisseur..." autocomplete="off" maxlength="50" disabled>
+        <button id="clearSelection" class="clear-btn" type="button">Effacer</button>
+      </div>
+      <div class="subtle">Astuce : / = 50 comptes, /a = tous, /c = clients, /f = fournisseurs</div>
+      <div id="statsAccounts" class="stats-visible"></div>
       <div id="autocompleteList" class="autocomplete-list hidden"></div>
       <div id="selectedPill" class="selected-pill hidden">
         <span id="selectedText"></span>
-        <button id="clearSelection" class="clear-btn" type="button">Effacer</button>
       </div>
     </div>
   </div>
@@ -135,6 +163,7 @@ var apiUrl = "";
 var uuid = "";
 var allAccounts = [];
 var matches = [];
+var activeIndex = -1;
 
 var dossierTable=document.getElementById("dossierTable");
 var accountCard=document.getElementById("accountCard");
@@ -155,6 +184,7 @@ var apiUrlInput=document.getElementById("apiUrlInput");
 var uuidInput=document.getElementById("uuidInput");
 var btnConnect=document.getElementById("btnConnect");
 var btnClearSaved=document.getElementById("btnClearSaved");
+var statsAccounts=document.getElementById("statsAccounts");
 var connectionCard=document.getElementById("connectionCard");
 
 function setStatus(text, cls){
@@ -286,10 +316,51 @@ function renderInsee(data){
   addRow(inseeTable,"Raison sociale",result.nom_raison_sociale);
   addRow(inseeTable,"Sigle",result.sigle);
   addRow(inseeTable,"NAF",siege.activite_principale);
-  addRow(inseeTable,"Adresse",siege.adresse);
+  var adresseValue = siege.adresse || "";
+  if(siege.latitude && siege.longitude){
+    var osmUrl = "https://www.openstreetmap.org/?mlat=" + encodeURIComponent(siege.latitude) +
+      "&mlon=" + encodeURIComponent(siege.longitude) +
+      "#map=17/" + encodeURIComponent(siege.latitude) + "/" + encodeURIComponent(siege.longitude);
+
+    var trAdresse=document.createElement("tr");
+    var thAdresse=document.createElement("th");
+    var tdAdresse=document.createElement("td");
+    thAdresse.textContent="Adresse";
+    tdAdresse.innerHTML = escapeHtml(adresseValue) + ' — <a href="' + osmUrl + '" target="_blank" rel="noopener noreferrer">🗺️ Voir sur la carte</a>';
+    trAdresse.appendChild(thAdresse);
+    trAdresse.appendChild(tdAdresse);
+    inseeTable.appendChild(trAdresse);
+  } else {
+    addRow(inseeTable,"Adresse",adresseValue);
+  }
   addRow(inseeTable,"Complément",siege.complement_adresse);
   addRow(inseeTable,"Catégorie entreprise",result.categorie_entreprise);
   addRow(inseeTable,"DateMAJ Insee",formatDateFR(result.date_mise_a_jour_insee));
+
+  var creationDate = formatDateFR(siege.date_creation);
+  var fermetureDate = formatDateFR(siege.date_fermeture);
+  var datesHtml = "";
+
+  if(creationDate){
+    datesHtml += "Création : " + creationDate;
+  }
+  if(creationDate && fermetureDate){
+    datesHtml += " — ";
+  }
+  if(fermetureDate){
+    datesHtml += 'Fermeture : <span class="date-red">' + escapeHtml(fermetureDate) + '</span>';
+  }
+
+  if(datesHtml){
+    var trDates=document.createElement("tr");
+    var thDates=document.createElement("th");
+    var tdDates=document.createElement("td");
+    thDates.textContent="Dates";
+    tdDates.innerHTML=datesHtml;
+    trDates.appendChild(thDates);
+    trDates.appendChild(tdDates);
+    inseeTable.appendChild(trDates);
+  }
 
   var financesRaw=result.finances;
   var finances=[];
@@ -346,11 +417,20 @@ function buildUnifiedList(clients,fournisseurs){
   fournisseurs.forEach(function(f){
     allAccounts.push({raw:f,type:"fournisseur",typeLabel:"Fournisseur",name:(f.Tiers&&f.Tiers.RaisonSociale)||f.Lib||""});
   });
+  allAccounts.sort(function(a,b){
+    return (a.name||"").localeCompare((b.name||""),'fr',{sensitivity:'base'});
+  });
   allAccounts.forEach(function(a){ a.raw.AccountTypeLabel=a.typeLabel; });
-  exportClients.disabled=allAccounts.filter(function(a){return a.type==="client";}).length===0;
-  exportFournisseurs.disabled=allAccounts.filter(function(a){return a.type==="fournisseur";}).length===0;
+
+  if(statsAccounts){
+    statsAccounts.textContent = clients.length + " clients – " + fournisseurs.length + " fournisseurs chargés";
+  }
+
+  exportClients.disabled=clients.length===0;
+  exportFournisseurs.disabled=fournisseurs.length===0;
   searchInput.disabled=false;
 }
+
 function getSelectedType(){
   var checked=document.querySelector('input[name="typeFilter"]:checked');
   return checked ? checked.value : "all";
@@ -358,18 +438,17 @@ function getSelectedType(){
 function showMatches(arr){
   list.innerHTML=""; matches=arr;
   if(!matches.length){ hideList(); return; }
-  matches.forEach(function(m){
+  matches.forEach(function(m,i){
     var div=document.createElement("div");
     div.className="autocomplete-item";
-    div.innerHTML='<span class="badge '+(m.type==="client"?'badge-client':'badge-fournisseur')+'">'+m.typeLabel+'</span><span>'+escapeHtml(m.name)+'</span>';
+    div.dataset.index=i;
+    var tiers = (m.raw && m.raw.Tiers) ? m.raw.Tiers : {};
+    var siren = tiers.Siren || tiers.SIREN || "";
+    var sirenBadge = siren ? ' <span class="badge badge-siren">SIREN</span>' : '';
+    div.innerHTML='<span class="badge '+(m.type==="client"?'badge-client':'badge-fournisseur')+'">'+m.typeLabel+'</span><span>'+escapeHtml(m.name)+'</span>' + sirenBadge;
     div.addEventListener("mousedown",function(e){
       e.preventDefault();
-      searchInput.value=m.name;
-      selectedText.textContent=m.typeLabel+" — "+m.name;
-      selectedPill.classList.remove("hidden");
-      hideList();
-      renderAccount(m.raw);
-      fetchInseeForAccount(m.raw);
+      selectMatch(m, false);
     });
     list.appendChild(div);
   });
@@ -394,6 +473,7 @@ function resetUiBeforeConnect(){
   allAccounts=[];
   matches=[];
 }
+
 function filterResultsFromInput(){
   var q=searchInput.value.toLowerCase().trim();
   selectedPill.classList.add("hidden");
@@ -401,7 +481,29 @@ function filterResultsFromInput(){
   accountCard.classList.add("hidden");
   accountTable.innerHTML="";
   clearInsee();
-  if(!q){ hideList(); return; }
+
+  if(q === "/"){
+    showMatches(allAccounts.slice(0,50));
+    return;
+  }
+  if(q === "/c"){
+    showMatches(allAccounts.filter(function(a){ return a.type === "client"; }).slice(0,50));
+    return;
+  }
+  if(q === "/f"){
+    showMatches(allAccounts.filter(function(a){ return a.type === "fournisseur"; }).slice(0,50));
+    return;
+  }
+  if(q === "/a"){
+    showMatches(allAccounts.slice(0,50));
+    return;
+  }
+
+  if(!q){
+    hideList();
+    return;
+  }
+
   var selectedType=getSelectedType();
   var filtered=allAccounts.filter(function(a){
     var lib=(a.raw&&a.raw.Lib)||"";
@@ -410,8 +512,10 @@ function filterResultsFromInput(){
     var matchType=(selectedType==="all") || (a.type===selectedType);
     return matchText && matchType;
   });
+
   showMatches(filtered);
 }
+
 function connectWithInputs(){
   var enteredApiUrl=normalizeApiUrl(apiUrlInput.value||"");
   var enteredUuid=(uuidInput.value||"").trim();
@@ -434,6 +538,7 @@ function connectWithInputs(){
   ]).then(function(res){
     renderDossier(JSON.parse(res[0]));
     buildUnifiedList(JSON.parse(res[1]), JSON.parse(res[2]));
+
     localStorage.setItem("ACD_API_URL", apiUrl);
     localStorage.setItem("ACD_API_UUID", uuid);
     connectionCard.style.display="none";
@@ -486,6 +591,50 @@ clearSelection.addEventListener("click",function(e){
   hideList();
   searchInput.focus();
 });
+
+searchInput.addEventListener("keydown",function(e){
+  if(!matches.length) return;
+
+  if(e.key==="ArrowDown"){
+    e.preventDefault();
+    activeIndex = (activeIndex + 1) % matches.length;
+    updateActiveItem();
+  }
+
+  if(e.key==="ArrowUp"){
+    e.preventDefault();
+    activeIndex = (activeIndex - 1 + matches.length) % matches.length;
+    updateActiveItem();
+  }
+
+  if(e.key==="Enter"){
+    if(activeIndex>=0 && matches[activeIndex]){
+      e.preventDefault();
+      selectMatch(matches[activeIndex], false);
+    }
+  }
+});
+
+function updateActiveItem(){
+  var items=list.querySelectorAll(".autocomplete-item");
+  items.forEach(function(el){el.classList.remove("active");});
+  if(activeIndex>=0 && items[activeIndex]){
+    items[activeIndex].classList.add("active");
+    items[activeIndex].scrollIntoView({block:"nearest"});
+  }
+}
+
+function selectMatch(m, preserveInput){
+  if(!preserveInput){
+    searchInput.value=m.name;
+  }
+  selectedText.textContent=m.typeLabel+" — "+m.name;
+  selectedPill.classList.remove("hidden");
+  hideList();
+  renderAccount(m.raw);
+  fetchInseeForAccount(m.raw);
+}
+
 searchInput.addEventListener("input",filterResultsFromInput);
 document.querySelectorAll('input[name="typeFilter"]').forEach(function(radio){
   radio.addEventListener("change",filterResultsFromInput);
