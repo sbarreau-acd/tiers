@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -5,574 +6,304 @@
 <title>Tiers - Sélection compte</title>
 <link rel="icon" href="data:,">
 <style>
-body{
-  font-family:"Segoe UI", Arial, sans-serif;
-  background:#f5f6f8;
-  padding:40px;
-  color:#1f2a44;
-}
-.box{
-  background:#fff;
-  border:1px solid #d9dde5;
-  border-radius:10px;
-  max-width:1200px;
-  padding:24px;
-  box-shadow:0 2px 8px rgba(0,0,0,.04);
-}
-h2{
-  margin:0 0 20px;
-  color:#003366;
-}
-.selection-layout{
-  display:grid;
-  grid-template-columns: minmax(420px, 520px) minmax(420px, 1fr);
-  gap:18px;
-  align-items:start;
-  margin-top:18px;
-}
-.controls{
-  display:grid;
-  grid-template-columns: 210px minmax(0, 1fr);
-  gap:14px;
-  align-items:end;
-}
-.field{
-  min-width:0;
-}
-.field label{
-  display:block;
-  font-weight:600;
-  margin-bottom:6px;
-  color:#003366;
-}
-.field.full{
-  grid-column:1 / -1;
-}
-select,input{
-  width:100%;
-  padding:10px 12px;
-  border:1px solid #cfd6e4;
-  border-radius:8px;
-  font:inherit;
-  background:#fff;
-  box-sizing:border-box;
-}
-select:disabled,
-input:disabled{
-  background:#f2f4f8;
-  color:#666;
-}
-.status{
-  margin:10px 0 18px;
-  font-weight:600;
-}
-.ok{ color:#0b6b2e; }
-.err{ color:#b00020; }
-.info{ color:#003366; }
-.subtle{
-  font-size:13px;
-  color:#5b6575;
-  margin-top:4px;
-}
-.card{
-  background:#f7f8fb;
-  border:1px solid #e2e6ef;
-  border-radius:8px;
-  padding:14px;
-  margin-top:18px;
-}
-.selection-layout .card{
-  margin-top:0;
-  height:100%;
-}
-.card h3{
-  margin:0 0 10px;
-  color:#003366;
-  font-size:16px;
-}
-table{
-  width:100%;
-  border-collapse:collapse;
-}
-th{
-  text-align:left;
-  width:220px;
-  background:#eef2fa;
-  padding:8px 10px;
-  border:1px solid #e2e6ef;
-}
-td{
-  padding:8px 10px;
-  border:1px solid #e2e6ef;
-  background:#fff;
-}
-.hidden{ display:none; }
+body{font-family:"Segoe UI",Arial,sans-serif;background:#f5f6f8;padding:40px;color:#1f2a44}
+.box{background:#fff;border:1px solid #d9dde5;border-radius:10px;max-width:1200px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+h2{margin:0 0 20px;color:#003366}
+.selection-layout{display:grid;grid-template-columns:minmax(420px,520px) minmax(420px,1fr);gap:18px;align-items:start;margin-top:18px}
+.controls{display:grid;grid-template-columns:210px minmax(0,1fr);gap:14px;align-items:end}
+.field label{display:block;font-weight:600;margin-bottom:6px;color:#003366}
+.field.full{grid-column:1/-1}
+select,input{width:100%;padding:10px 12px;border:1px solid #cfd6e4;border-radius:8px;font:inherit;background:#fff;box-sizing:border-box}
+select:disabled,input:disabled{background:#f2f4f8;color:#666}
+.status{margin:10px 0 18px;font-weight:600}
+.ok{color:#0b6b2e}.err{color:#b00020}.info{color:#003366}
+.subtle{font-size:13px;color:#5b6575;margin-top:4px}
+.card{background:#f7f8fb;border:1px solid #e2e6ef;border-radius:8px;padding:14px;margin-top:18px}
+.selection-layout .card{margin-top:0;height:100%}
+.card h3{margin:0 0 10px;color:#003366;font-size:16px}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;width:220px;background:#eef2fa;padding:8px 10px;border:1px solid #e2e6ef}
+td{padding:8px 10px;border:1px solid #e2e6ef;background:#fff}
+.hidden{display:none}
 
-.autocomplete-wrap{
-  position:relative;
-}
-.autocomplete-list{
-  position:absolute;
-  top:100%;
-  left:0;
-  right:0;
-  z-index:20;
-  margin-top:6px;
-  background:#fff;
-  border:1px solid #cfd6e4;
-  border-radius:8px;
-  box-shadow:0 8px 20px rgba(0,0,0,.08);
-  max-height:320px;
-  overflow-y:auto;
-}
-.autocomplete-item{
-  padding:10px 12px;
-  border-bottom:1px solid #eef2fa;
-  cursor:pointer;
-  background:#fff;
-}
-.autocomplete-item:last-child{
-  border-bottom:none;
-}
-.autocomplete-item:hover,
-.autocomplete-item.active{
-  background:#eef4ff;
-}
-.item-code{
-  font-weight:700;
-  color:#003366;
-}
-.item-name{
-  color:#1f2a44;
-}
-.item-meta{
-  margin-top:2px;
-  font-size:12px;
-  color:#687385;
-}
-.selected-pill{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  margin-top:10px;
-  padding:8px 10px;
-  background:#eef4ff;
-  border:1px solid #cfe0ff;
-  border-radius:999px;
-  color:#003366;
-  font-size:13px;
-  font-weight:600;
-}
-.clear-btn{
-  border:0;
-  background:#003366;
-  color:#fff;
-  border-radius:999px;
-  padding:2px 8px;
-  cursor:pointer;
-  font-size:12px;
-}
-@media (max-width: 900px){
-  .selection-layout{
-    grid-template-columns: 1fr;
-  }
-  .controls{
-    grid-template-columns: 1fr;
-  }
+.autocomplete-wrap{position:relative}
+.autocomplete-list{position:absolute;top:100%;left:0;right:0;z-index:20;margin-top:6px;background:#fff;border:1px solid #cfd6e4;border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,.08);max-height:320px;overflow-y:auto}
+.autocomplete-item{padding:10px 12px;border-bottom:1px solid #eef2fa;cursor:pointer}
+.autocomplete-item:hover,.autocomplete-item.active{background:#eef4ff}
+.item-code{font-weight:700;color:#003366}
+.selected-pill{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:8px 10px;background:#eef4ff;border:1px solid #cfe0ff;border-radius:999px;color:#003366;font-size:13px;font-weight:600}
+.clear-btn{border:0;background:#003366;color:#fff;border-radius:999px;padding:2px 8px;cursor:pointer;font-size:12px}
+
+@media (max-width:900px){
+.selection-layout{grid-template-columns:1fr}
+.controls{grid-template-columns:1fr}
 }
 </style>
 </head>
 <body>
 <div class="box">
-  <h2>Sélection d’un compte client ou fournisseur</h2>
+<h2>Sélection d’un compte client ou fournisseur</h2>
 
-  <div id="status" class="status info">Chargement...</div>
+<div id="status" class="status info">Chargement...</div>
 
-  <div class="card">
-    <h3>Dossier courant</h3>
-    <table id="dossierTable"></table>
-  </div>
+<div class="card">
+<h3>Dossier courant</h3>
+<table id="dossierTable"></table>
+</div>
 
-  <div class="selection-layout">
-    <div class="card">
+<div class="selection-layout">
+<div class="card">
 
-      <div class="controls">
-        <div class="field">
-          <label for="accountType">Type de compte</label>
-          <select id="accountType" disabled>
-            <option value="">Choisir...</option>
-            <option value="clients">Client</option>
-            <option value="fournisseurs">Fournisseur</option>
-          </select>
-        </div>
-      </div>
+<div class="controls">
+<div class="field">
+<label for="accountType">Type de compte</label>
+<select id="accountType" disabled>
+<option value="">Choisir...</option>
+<option value="clients">Client</option>
+<option value="fournisseurs">Fournisseur</option>
+</select>
+</div>
+</div>
 
-      <div class="controls">
-        <div class="field full autocomplete-wrap">
-          <label for="searchInput">Compte</label>
-          <input id="searchInput" placeholder="Rechercher un compte..." autocomplete="off" disabled>
-          <div id="autocompleteList" class="autocomplete-list hidden"></div>
-          <div class="subtle" id="listInfo"></div>
-          <div id="selectedPill" class="selected-pill hidden">
-            <span id="selectedText"></span>
-            <button id="clearSelection" class="clear-btn" type="button">Effacer</button>
-          </div>
-        </div>
-      </div>
+<div class="controls">
+<div class="field full autocomplete-wrap">
+<label for="searchInput">Compte</label>
+<input id="searchInput" placeholder="Rechercher un compte..." autocomplete="off" disabled>
+<div id="autocompleteList" class="autocomplete-list hidden"></div>
+<div class="subtle" id="listInfo"></div>
 
-    </div>
+<div id="selectedPill" class="selected-pill hidden">
+<span id="selectedText"></span>
+<button id="clearSelection" class="clear-btn" type="button">Effacer</button>
+</div>
 
-    <div class="card hidden" id="accountCard">
-      <h3>Compte sélectionné</h3>
-      <table id="accountTable"></table>
-    </div>
-  </div>
+</div>
+</div>
+
+</div>
+
+<div class="card hidden" id="accountCard">
+<h3>Compte sélectionné</h3>
+<table id="accountTable"></table>
+</div>
+
+</div>
 </div>
 
 <script>
 (function(){
 
-function normalize(u){
-  return (u || "").replace(/\/+$/, "");
+function escapeHtml(s){
+return String(s||"").replace(/[&<>"]/g,function(c){
+return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]
+})
 }
 
 function addRow(table,label,value){
-  if(value === undefined || value === null || String(value).trim() === "") return;
-  var tr=document.createElement("tr");
-  var th=document.createElement("th");
-  var td=document.createElement("td");
-  th.textContent=label;
-  td.textContent=value;
-  tr.appendChild(th);
-  tr.appendChild(td);
-  table.appendChild(tr);
+if(!value||String(value).trim()==="") return
+var tr=document.createElement("tr")
+var th=document.createElement("th")
+var td=document.createElement("td")
+th.textContent=label
+td.textContent=value
+tr.appendChild(th)
+tr.appendChild(td)
+table.appendChild(tr)
 }
 
-function setStatus(message,css){
-  var el=document.getElementById("status");
-  el.textContent=message;
-  el.className="status "+css;
+function setStatus(m,c){
+var el=document.getElementById("status")
+el.textContent=m
+el.className="status "+c
 }
 
-var params=new URLSearchParams(window.location.search);
-var cnx=params.get("CNX")||params.get("cnx")||"";
-var uuid=params.get("UUID")||params.get("uuid")||"";
-var referrer=document.referrer;
-var apiUrl=null;
+var params=new URLSearchParams(window.location.search)
+var cnx=params.get("CNX")||params.get("cnx")||""
+var uuid=params.get("UUID")||params.get("uuid")||""
+var referrer=document.referrer
+var apiUrl=null
 
-var accountCache={clients:[],fournisseurs:[]};
-var displayList=[];
-var currentMatches=[];
-var activeIndex=-1;
-var selectedAccount=null;
-
-var accountType=document.getElementById("accountType");
-var searchInput=document.getElementById("searchInput");
-var autocompleteList=document.getElementById("autocompleteList");
-var selectedPill=document.getElementById("selectedPill");
-var selectedText=document.getElementById("selectedText");
-var clearSelection=document.getElementById("clearSelection");
-var accountTable=document.getElementById("accountTable");
-var accountCard=document.getElementById("accountCard");
-var dossierTable=document.getElementById("dossierTable");
-var listInfo=document.getElementById("listInfo");
-
-if(referrer && cnx){
-  try{
-    var r=new URL(referrer);
-    apiUrl=normalize(r.origin+"/"+cnx+"/api");
-  }catch(e){}
+if(referrer&&cnx){
+try{
+var r=new URL(referrer)
+apiUrl=r.origin+"/"+cnx+"/api"
+}catch(e){}
 }
 
-if(!apiUrl || !uuid){
-  setStatus("Paramètres CNX ou UUID manquants","err");
-  return;
+if(!apiUrl||!uuid){
+setStatus("Paramètres CNX ou UUID manquants","err")
+return
 }
 
 function apiGet(path){
-  return fetch(apiUrl+path,{
-    method:"GET",
-    headers:{
-      "accept":"text/plain",
-      "UUID":uuid
-    }
-  }).then(function(r){
-    return r.text().then(function(t){
-      if(!r.ok) throw new Error("Erreur HTTP "+r.status);
-      return t;
-    });
-  });
+return fetch(apiUrl+path,{method:"GET",headers:{accept:"text/plain","UUID":uuid}})
+.then(r=>r.text().then(t=>{if(!r.ok)throw new Error("Erreur HTTP "+r.status);return t}))
 }
 
-function renderDossier(data){
-  dossierTable.innerHTML="";
-  addRow(dossierTable,"Nom",data.Nom);
-  addRow(dossierTable,"Prénom",data.Prenom);
-  addRow(dossierTable,"Adresse ligne 1",data.Adresse1);
-  addRow(dossierTable,"Adresse ligne 2",data.Adresse2);
-  addRow(dossierTable,"Code postal",data.CodePostal);
-  addRow(dossierTable,"Ville",data.Ville);
-  addRow(dossierTable,"Siret",data.SIRET);
+var accountCache={clients:[],fournisseurs:[]}
+var displayList=[]
+var matches=[]
+var accountType=document.getElementById("accountType")
+var searchInput=document.getElementById("searchInput")
+var list=document.getElementById("autocompleteList")
+var accountCard=document.getElementById("accountCard")
+var accountTable=document.getElementById("accountTable")
+var dossierTable=document.getElementById("dossierTable")
+var selectedText=document.getElementById("selectedText")
+var selectedPill=document.getElementById("selectedPill")
+var clearSelection=document.getElementById("clearSelection")
+var listInfo=document.getElementById("listInfo")
+
+function renderDossier(d){
+dossierTable.innerHTML=""
+addRow(dossierTable,"Nom",d.Nom)
+addRow(dossierTable,"Prénom",d.Prenom)
+addRow(dossierTable,"Adresse ligne 1",d.Adresse1)
+addRow(dossierTable,"Adresse ligne 2",d.Adresse2)
+addRow(dossierTable,"Code postal",d.CodePostal)
+addRow(dossierTable,"Ville",d.Ville)
+addRow(dossierTable,"Siret",d.SIRET)
 }
 
-function renderAccount(account){
-  accountTable.innerHTML="";
-  var tiers=account && account.Tiers ? account.Tiers : {};
-  var raisonSociale=tiers.RaisonSociale;
-
-  addRow(accountTable,"Code",account ? account.Code : "");
-
-  if(!raisonSociale || String(raisonSociale).trim()===""){
-    addRow(accountTable,"Libellé",account ? account.Lib : "");
-  }
-
-  addRow(accountTable,"Raison sociale",raisonSociale);
-  addRow(accountTable,"SIREN",tiers.Siren);
-  addRow(accountTable,"TVA intracom",tiers.NumeroIntracom);
-  addRow(accountTable,"Email",tiers.Email);
-  addRow(accountTable,"Téléphone",tiers.Telephone);
-
-  accountCard.classList.remove("hidden");
+function renderAccount(a){
+accountTable.innerHTML=""
+var t=a.Tiers||{}
+var rs=t.RaisonSociale
+addRow(accountTable,"Code",a.Code)
+if(!rs) addRow(accountTable,"Libellé",a.Lib)
+addRow(accountTable,"Raison sociale",rs)
+addRow(accountTable,"SIREN",t.Siren)
+addRow(accountTable,"TVA intracom",t.NumeroIntracom)
+addRow(accountTable,"Email",t.Email)
+addRow(accountTable,"Téléphone",t.Telephone)
+accountCard.classList.remove("hidden")
 }
 
-function makeDisplayList(type){
-  var items=accountCache[type]||[];
+function buildList(type){
+var items=accountCache[type]||[]
 
-  displayList=items.map(function(item,index){
-    var tiers=item.Tiers||{};
-    var displayName=tiers.RaisonSociale && tiers.RaisonSociale.trim()!=="" ? tiers.RaisonSociale : item.Lib;
-    var label=item.Code+" — "+(displayName||"");
-    return{
-      index:index,
-      code:item.Code||"",
-      name:displayName||"",
-      label:label,
-      searchText:(item.Code+" "+(displayName||"")+" "+(item.Lib||"")).toLowerCase()
-    };
-  });
+displayList=items.map((i,idx)=>{
+var name=i.Tiers&&i.Tiers.RaisonSociale?i.Tiers.RaisonSociale:i.Lib
+return{
+index:idx,
+code:i.Code,
+name:name||"",
+label:i.Code+" — "+(name||""),
+search:(i.Code+" "+(name||"")+" "+(i.Lib||"")).toLowerCase()
+}
+})
 
-  displayList.sort(function(a,b){
-    var nameCompare=a.name.localeCompare(b.name,"fr",{sensitivity:"base"});
-    if(nameCompare!==0) return nameCompare;
-    return a.code.localeCompare(b.code,"fr",{sensitivity:"base"});
-  });
+displayList.sort((a,b)=>a.name.localeCompare(b.name,"fr",{sensitivity:"base"}))
 
-  listInfo.textContent=displayList.length
-    ? displayList.length+" compte(s) disponible(s)"
-    : "Aucun compte disponible";
+listInfo.textContent=displayList.length+" compte(s) disponible(s)"
 }
 
-function closeAutocomplete(){
-  autocompleteList.classList.add("hidden");
-  autocompleteList.innerHTML="";
-  activeIndex=-1;
-  currentMatches=[];
+function showMatches(arr){
+list.innerHTML=""
+matches=arr.slice(0,50)
+
+if(!matches.length){
+list.classList.add("hidden")
+return
 }
 
-function openAutocomplete(){
-  if(currentMatches.length){
-    autocompleteList.classList.remove("hidden");
-  }
+matches.forEach((m,i)=>{
+var row=document.createElement("div")
+row.className="autocomplete-item"
+row.innerHTML='<span class="item-code">'+escapeHtml(m.code)+'</span> — '+escapeHtml(m.name)
+row.onclick=()=>selectMatch(i)
+list.appendChild(row)
+})
+
+list.classList.remove("hidden")
 }
 
-function renderAutocomplete(matches){
-  autocompleteList.innerHTML="";
-  currentMatches=matches.slice(0,50);
-  activeIndex=-1;
+function selectMatch(i){
+var m=matches[i]
+var type=accountType.value
+var acc=accountCache[type][m.index]
 
-  if(!currentMatches.length){
-    autocompleteList.classList.add("hidden");
-    return;
-  }
+searchInput.value=m.label
+selectedText.textContent=m.label
+selectedPill.classList.remove("hidden")
 
-  currentMatches.forEach(function(item,index){
-    var row=document.createElement("div");
-    row.className="autocomplete-item";
-    row.setAttribute("data-index", String(index));
-    row.innerHTML=
-      '<div><span class="item-code">'+escapeHtml(item.code)+'</span> <span class="item-name">— '+escapeHtml(item.name)+'</span></div>' +
-      '<div class="item-meta">Recherche sur code, raison sociale et libellé</div>';
-    row.addEventListener("mousedown", function(ev){
-      ev.preventDefault();
-      selectMatch(index);
-    });
-    autocompleteList.appendChild(row);
-  });
+list.classList.add("hidden")
 
-  openAutocomplete();
+renderAccount(acc)
 }
 
-function updateActiveItem(){
-  var items=autocompleteList.querySelectorAll(".autocomplete-item");
-  items.forEach(function(el,idx){
-    if(idx===activeIndex){
-      el.classList.add("active");
-      el.scrollIntoView({block:"nearest"});
-    }else{
-      el.classList.remove("active");
-    }
-  });
+function refresh(){
+var q=searchInput.value.toLowerCase()
+
+if(!q){
+showMatches(displayList)
+return
 }
 
-function selectMatch(matchIndex){
-  var match=currentMatches[matchIndex];
-  if(!match) return;
+var r=displayList.filter(x=>x.search.includes(q))
 
-  var type=accountType.value;
-  selectedAccount=accountCache[type][match.index];
-  searchInput.value=match.label;
-  selectedText.textContent=match.label;
-  selectedPill.classList.remove("hidden");
-  closeAutocomplete();
-  renderAccount(selectedAccount);
+/* AUTO SELECTION SI UN RESULTAT */
+if(r.length===1){
+selectMatch(displayList.indexOf(r[0]))
+return
 }
 
-function clearSelectedAccount(){
-  selectedAccount=null;
-  selectedPill.classList.add("hidden");
-  selectedText.textContent="";
-  accountCard.classList.add("hidden");
-  accountTable.innerHTML="";
-}
-
-function refreshAutocomplete(){
-  var q=searchInput.value.trim().toLowerCase();
-
-  if(!accountType.value){
-    closeAutocomplete();
-    return;
-  }
-
-  if(!q){
-    renderAutocomplete(displayList.slice(0,50));
-    return;
-  }
-
-  var matches=displayList.filter(function(item){
-    return item.searchText.indexOf(q)!==-1;
-  });
-
-  renderAutocomplete(matches);
-}
-
-function escapeHtml(s){
-  return String(s==null ? "" : s).replace(/[&<>"']/g, function(c){
-    return {"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;","'":"&#39;"}[c];
-  });
+showMatches(r)
 }
 
 function loadAccounts(type){
-  var path=type==="clients"
-    ? "/v1/compta/comptes/clients"
-    : "/v1/compta/comptes/fournisseurs";
 
-  setStatus("Chargement de la liste des comptes...","info");
-  searchInput.disabled=true;
-  searchInput.value="";
-  clearSelectedAccount();
-  closeAutocomplete();
+var path=type==="clients"
+?"/v1/compta/comptes/clients"
+:"/v1/compta/comptes/fournisseurs"
 
-  apiGet(path)
-    .then(function(text){
-      var data=JSON.parse(text);
+setStatus("Chargement des comptes...","info")
 
-      if(!Array.isArray(data)){
-        throw new Error("Réponse inattendue");
-      }
+apiGet(path).then(t=>{
 
-      accountCache[type]=data;
-      makeDisplayList(type);
-      searchInput.disabled=false;
-      searchInput.focus();
-      refreshAutocomplete();
-      setStatus("Connexion SSO valide","ok");
-    })
-    .catch(function(err){
-      setStatus(err.message,"err");
-      listInfo.textContent="";
-      searchInput.disabled=true;
-      closeAutocomplete();
-    });
+var data=JSON.parse(t)
+accountCache[type]=data
+buildList(type)
+
+searchInput.disabled=false
+searchInput.focus()
+
+setStatus("Connexion SSO valide","ok")
+
+}).catch(e=>setStatus(e.message,"err"))
 }
 
-accountType.addEventListener("change",function(){
-  var type=accountType.value;
-  searchInput.value="";
-  clearSelectedAccount();
+accountType.onchange=()=>{
+searchInput.value=""
+accountCard.classList.add("hidden")
+searchInput.disabled=true
 
-  if(!type){
-    searchInput.disabled=true;
-    closeAutocomplete();
-    listInfo.textContent="";
-    return;
-  }
+if(!accountType.value) return
 
-  loadAccounts(type);
-});
+loadAccounts(accountType.value)
+}
 
-searchInput.addEventListener("focus", function(){
-  if(!searchInput.disabled){
-    refreshAutocomplete();
-  }
-});
+searchInput.oninput=refresh
 
-searchInput.addEventListener("input", function(){
-  clearSelectedAccount();
-  refreshAutocomplete();
-});
+clearSelection.onclick=()=>{
+searchInput.value=""
+selectedPill.classList.add("hidden")
+accountCard.classList.add("hidden")
+searchInput.focus()
+refresh()
+}
 
-searchInput.addEventListener("keydown", function(e){
-  if(autocompleteList.classList.contains("hidden")) return;
-
-  if(e.key==="ArrowDown"){
-    e.preventDefault();
-    if(activeIndex < currentMatches.length - 1){
-      activeIndex++;
-      updateActiveItem();
-    }
-  }else if(e.key==="ArrowUp"){
-    e.preventDefault();
-    if(activeIndex > 0){
-      activeIndex--;
-      updateActiveItem();
-    }
-  }else if(e.key==="Enter"){
-    if(activeIndex >= 0){
-      e.preventDefault();
-      selectMatch(activeIndex);
-    }
-  }else if(e.key==="Escape"){
-    closeAutocomplete();
-  }
-});
-
-clearSelection.addEventListener("click", function(){
-  searchInput.value="";
-  clearSelectedAccount();
-  searchInput.focus();
-  refreshAutocomplete();
-});
-
-document.addEventListener("click", function(e){
-  if(!e.target.closest(".autocomplete-wrap")){
-    closeAutocomplete();
-  }
-});
-
-setStatus("Chargement du dossier courant...","info");
+setStatus("Chargement du dossier courant...","info")
 
 apiGet("/v1/sessions/dossier")
-  .then(function(text){
-    var dossier=JSON.parse(text);
-    renderDossier(dossier);
-    accountType.disabled=false;
-    setStatus("Connexion SSO valide","ok");
-  })
-  .catch(function(err){
-    setStatus(err.message,"err");
-  });
+.then(t=>{
+renderDossier(JSON.parse(t))
+accountType.disabled=false
+setStatus("Connexion SSO valide","ok")
+})
+.catch(e=>setStatus(e.message,"err"))
 
-})();
+})()
 </script>
 </body>
 </html>
