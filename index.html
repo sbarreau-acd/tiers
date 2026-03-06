@@ -169,6 +169,16 @@ function clearInsee(){
   inseeInfo.textContent="";
   inseeInfo.classList.add("hidden");
 }
+
+function formatEuro(v){
+  if(v===undefined||v===null||v==="") return "";
+  try{
+    return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(Number(v));
+  }catch(e){
+    return v;
+  }
+}
+
 function stringify(v){
   return (v===undefined||v===null||String(v).trim()==="") ? "" : String(v);
 }
@@ -226,7 +236,7 @@ function renderInsee(data){
     finances.sort(function(a,b){ return sortKey(b)-sortKey(a); });
     finances.slice(0,3).forEach(function(f){
       var tr=document.createElement("tr");
-      var values=[financeLabel(f), stringify(f.ca), stringify(f.resultat_net)];
+      var values=[financeLabel(f), formatEuro(f.ca), formatEuro(f.resultat_net)];
       values.forEach(function(v){
         var td=document.createElement("td");
         td.textContent=v;
