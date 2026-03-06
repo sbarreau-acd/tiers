@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -45,7 +46,7 @@ h2{
 .field.full{
   grid-column:1 / -1;
 }
-select{
+select,input{
   width:100%;
   padding:10px 12px;
   border:1px solid #cfd6e4;
@@ -54,20 +55,6 @@ select{
   background:#fff;
 }
 select:disabled{
-  background:#f2f4f8;
-  color:#666;
-}
-.search-input{
-  width:100%;
-  padding:10px 12px;
-  border:1px solid #cfd6e4;
-  border-radius:8px;
-  font:inherit;
-  background:#fff;
-  margin-bottom:10px;
-  box-sizing:border-box;
-}
-.search-input:disabled{
   background:#f2f4f8;
   color:#666;
 }
@@ -139,6 +126,7 @@ td{
 
   <div class="selection-layout">
     <div class="card">
+
       <div class="controls">
         <div class="field">
           <label for="accountType">Type de compte</label>
@@ -152,14 +140,19 @@ td{
 
       <div class="controls">
         <div class="field full">
-          <label for="accountSearch">Compte</label>
-          <input type="text" id="accountSearch" class="search-input" placeholder="Rechercher un compte..." disabled>
+          <label for="searchInput">Recherche</label>
+          <input id="searchInput" placeholder="Rechercher un compte..." disabled>
+        </div>
+
+        <div class="field full">
+          <label for="accountSelect">Compte</label>
           <select id="accountSelect" disabled>
             <option value="">Sélectionner un compte...</option>
           </select>
           <div class="subtle" id="listInfo"></div>
         </div>
       </div>
+
     </div>
 
     <div class="card hidden" id="accountCard">
@@ -171,221 +164,241 @@ td{
 
 <script>
 (function(){
-  function normalize(u){
-    return (u || "").replace(/\/+$/, "");
-  }
 
-  function addRow(table, label, value){
-    if(value === undefined || value === null || String(value).trim() === ""){
-      return;
+function normalize(u){
+  return (u || "").replace(/\/+$/, "");
+}
+
+function addRow(table,label,value){
+  if(value === undefined || value === null || String(value).trim() === "") return;
+  var tr=document.createElement("tr");
+  var th=document.createElement("th");
+  var td=document.createElement("td");
+  th.textContent=label;
+  td.textContent=value;
+  tr.appendChild(th);
+  tr.appendChild(td);
+  table.appendChild(tr);
+}
+
+function setStatus(message,css){
+  var el=document.getElementById("status");
+  el.textContent=message;
+  el.className="status "+css;
+}
+
+var params=new URLSearchParams(window.location.search);
+var cnx=params.get("CNX")||params.get("cnx")||"";
+var uuid=params.get("UUID")||params.get("uuid")||"";
+var referrer=document.referrer;
+var apiUrl=null;
+
+var accountCache={clients:[],fournisseurs:[]};
+var filteredList=[];
+
+var accountType=document.getElementById("accountType");
+var accountSelect=document.getElementById("accountSelect");
+var searchInput=document.getElementById("searchInput");
+var accountTable=document.getElementById("accountTable");
+var accountCard=document.getElementById("accountCard");
+var dossierTable=document.getElementById("dossierTable");
+var listInfo=document.getElementById("listInfo");
+
+if(referrer && cnx){
+  try{
+    var r=new URL(referrer);
+    apiUrl=normalize(r.origin+"/"+cnx+"/api");
+  }catch(e){}
+}
+
+if(!apiUrl || !uuid){
+  setStatus("Paramètres CNX ou UUID manquants","err");
+  return;
+}
+
+function apiGet(path){
+  return fetch(apiUrl+path,{
+    method:"GET",
+    headers:{
+      "accept":"text/plain",
+      "UUID":uuid
     }
-    var tr = document.createElement("tr");
-    var th = document.createElement("th");
-    var td = document.createElement("td");
-    th.textContent = label;
-    td.textContent = value;
-    tr.appendChild(th);
-    tr.appendChild(td);
-    table.appendChild(tr);
+  }).then(function(r){
+    return r.text().then(function(t){
+      if(!r.ok) throw new Error("Erreur HTTP "+r.status);
+      return t;
+    });
+  });
+}
+
+function renderDossier(data){
+  dossierTable.innerHTML="";
+  addRow(dossierTable,"Nom",data.Nom);
+  addRow(dossierTable,"Prénom",data.Prenom);
+  addRow(dossierTable,"Adresse ligne 1",data.Adresse1);
+  addRow(dossierTable,"Adresse ligne 2",data.Adresse2);
+  addRow(dossierTable,"Code postal",data.CodePostal);
+  addRow(dossierTable,"Ville",data.Ville);
+  addRow(dossierTable,"Siret",data.SIRET);
+}
+
+function renderAccount(account){
+
+  accountTable.innerHTML="";
+  var tiers=account && account.Tiers ? account.Tiers : {};
+  var raisonSociale=tiers.RaisonSociale;
+
+  addRow(accountTable,"Code",account ? account.Code : "");
+
+  if(!raisonSociale || String(raisonSociale).trim()===""){
+    addRow(accountTable,"Libellé",account ? account.Lib : "");
   }
 
-  function setStatus(message, css){
-    var el = document.getElementById("status");
-    el.textContent = message;
-    el.className = "status " + css;
-  }
+  addRow(accountTable,"Raison sociale",raisonSociale);
+  addRow(accountTable,"SIREN",tiers.Siren);
+  addRow(accountTable,"TVA intracom",tiers.NumeroIntracom);
+  addRow(accountTable,"Email",tiers.Email);
+  addRow(accountTable,"Téléphone",tiers.Telephone);
 
-  var params = new URLSearchParams(window.location.search);
-  var cnx = params.get("CNX") || params.get("cnx") || "";
-  var uuid = params.get("UUID") || params.get("uuid") || "";
-  var referrer = document.referrer;
-  var apiUrl = null;
-  var accountCache = { clients: [], fournisseurs: [] };
+  accountCard.classList.remove("hidden");
+}
 
-  var accountType = document.getElementById("accountType");
-  var accountSearch = document.getElementById("accountSearch");
-  var accountSelect = document.getElementById("accountSelect");
-  var accountTable = document.getElementById("accountTable");
-  var accountCard = document.getElementById("accountCard");
-  var dossierTable = document.getElementById("dossierTable");
-  var listInfo = document.getElementById("listInfo");
+function buildAccountOptions(type){
 
-  if(referrer && cnx){
-    try{
-      var r = new URL(referrer);
-      apiUrl = normalize(r.origin + "/" + cnx + "/api");
-    }catch(e){}
-  }
+  var items=accountCache[type]||[];
 
-  if(!apiUrl || !uuid){
-    setStatus("Paramètres CNX ou UUID manquants", "err");
+  filteredList=items.map(function(item,index){
+
+    var tiers=item.Tiers||{};
+    var displayName=tiers.RaisonSociale && tiers.RaisonSociale.trim()!==""
+      ? tiers.RaisonSociale
+      : item.Lib;
+
+    return{
+      index:index,
+      code:item.Code,
+      name:displayName||"",
+      label:item.Code+" — "+(displayName||"")
+    };
+
+  });
+
+  filteredList.sort(function(a,b){
+    return a.name.localeCompare(b.name,"fr",{sensitivity:"base"});
+  });
+
+  populateSelect(filteredList);
+
+  searchInput.disabled=false;
+}
+
+function populateSelect(list){
+
+  accountSelect.innerHTML='<option value="">Sélectionner un compte...</option>';
+
+  list.forEach(function(item){
+    var option=document.createElement("option");
+    option.value=item.index;
+    option.textContent=item.label;
+    accountSelect.appendChild(option);
+  });
+
+  accountSelect.disabled=list.length===0;
+
+  listInfo.textContent=list.length
+    ? list.length+" compte(s) disponible(s)"
+    : "Aucun compte disponible";
+
+  accountCard.classList.add("hidden");
+  accountTable.innerHTML="";
+}
+
+function loadAccounts(type){
+
+  var path=type==="clients"
+    ? "/v1/compta/comptes/clients"
+    : "/v1/compta/comptes/fournisseurs";
+
+  setStatus("Chargement de la liste des comptes...","info");
+
+  apiGet(path)
+    .then(function(text){
+
+      var data=JSON.parse(text);
+
+      if(!Array.isArray(data))
+        throw new Error("Réponse inattendue");
+
+      accountCache[type]=data;
+
+      buildAccountOptions(type);
+
+      setStatus("Connexion SSO valide","ok");
+
+    })
+    .catch(function(err){
+      setStatus(err.message,"err");
+    });
+}
+
+accountType.addEventListener("change",function(){
+
+  var type=accountType.value;
+
+  if(!type){
+    accountSelect.disabled=true;
+    searchInput.disabled=true;
     return;
   }
 
-  function apiGet(path){
-    return fetch(apiUrl + path, {
-      method: "GET",
-      headers: {
-        "accept": "text/plain",
-        "UUID": uuid
-      }
-    }).then(function(r){
-      return r.text().then(function(t){
-        if(!r.ok){
-          throw new Error("Erreur HTTP " + r.status + " sur " + path);
-        }
-        return t;
-      });
-    });
-  }
+  loadAccounts(type);
 
-  function renderDossier(data){
-    dossierTable.innerHTML = "";
-    addRow(dossierTable, "Nom", data.Nom);
-    addRow(dossierTable, "Prénom", data.Prenom);
-    addRow(dossierTable, "Adresse ligne 1", data.Adresse1);
-    addRow(dossierTable, "Adresse ligne 2", data.Adresse2);
-    addRow(dossierTable, "Code postal", data.CodePostal);
-    addRow(dossierTable, "Ville", data.Ville);
-    addRow(dossierTable, "Siret", data.SIRET);
-  }
+});
 
-  function renderAccount(account){
-    accountTable.innerHTML = "";
-    var tiers = account && account.Tiers ? account.Tiers : {};
+accountSelect.addEventListener("change",function(){
 
-    addRow(accountTable, "Code", account ? account.Code : "");
-    addRow(accountTable, "Libellé", account ? account.Lib : "");
-    addRow(accountTable, "Raison sociale", tiers.RaisonSociale);
-    addRow(accountTable, "SIREN", tiers.Siren);
-    addRow(accountTable, "TVA intracom", tiers.NumeroIntracom);
-    addRow(accountTable, "Email", tiers.Email);
-    addRow(accountTable, "Téléphone", tiers.Telephone);
+  var type=accountType.value;
+  var idx=accountSelect.value;
 
-    accountCard.classList.remove("hidden");
-  }
-
-  function normalizeText(value){
-    return String(value || "")
-      .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "")
-      .toLowerCase()
-      .trim();
-  }
-
-  function getSortedAccounts(type){
-    return (accountCache[type] || []).slice().sort(function(a, b){
-      var aLabel = normalizeText((a && a.Lib) || (a && a.Code) || "");
-      var bLabel = normalizeText((b && b.Lib) || (b && b.Code) || "");
-      return aLabel.localeCompare(bLabel, "fr", { sensitivity: "base" });
-    });
-  }
-
-  function getFilteredAccounts(type){
-    var query = normalizeText(accountSearch.value);
-    var items = getSortedAccounts(type);
-
-    if(!query){
-      return items;
-    }
-
-    return items.filter(function(item){
-      var label = normalizeText(item && item.Lib);
-      var code = normalizeText(item && item.Code);
-      return label.indexOf(query) !== -1 || code.indexOf(query) !== -1;
-    });
-  }
-
-  function buildAccountOptions(type){
-    var items = getFilteredAccounts(type);
-    accountSelect.innerHTML = '<option value="">Sélectionner un compte...</option>';
-
-    items.forEach(function(item, index){
-      var option = document.createElement("option");
-      option.value = String(index);
-      option.textContent = ((item && item.Code) ? (item.Code + " — ") : "") + (item.Lib || item.Code || (type === "clients" ? "Client sans libellé" : "Fournisseur sans libellé"));
-      accountSelect.appendChild(option);
-    });
-
-    accountSelect.disabled = items.length === 0;
-    listInfo.textContent = items.length ? (items.length + " compte(s) affiché(s)") : "Aucun compte disponible";
+  if(type==="" || idx===""){
     accountCard.classList.add("hidden");
-    accountTable.innerHTML = "";
+    return;
   }
 
-  function loadAccounts(type){
-    var path = type === "clients" ? "/v1/compta/comptes/clients" : "/v1/compta/comptes/fournisseurs";
-    setStatus("Chargement de la liste des comptes...", "info");
-    accountSearch.disabled = true;
-    accountSearch.value = "";
-    accountSelect.disabled = true;
-    accountSelect.innerHTML = '<option value="">Chargement...</option>';
-    accountCard.classList.add("hidden");
+  renderAccount(accountCache[type][Number(idx)]);
 
-    apiGet(path)
-      .then(function(text){
-        var data = JSON.parse(text);
-        if(!Array.isArray(data)){
-          throw new Error("Réponse inattendue pour la liste des comptes");
-        }
-        accountCache[type] = data;
-        accountSearch.disabled = false;
-        buildAccountOptions(type);
-        setStatus("Connexion SSO valide", "ok");
-      })
-      .catch(function(err){
-        accountCache[type] = [];
-        accountSearch.disabled = true;
-        buildAccountOptions(type);
-        setStatus(err.message, "err");
-      });
-  }
+});
 
-  accountType.addEventListener("change", function(){
-    var type = accountType.value;
-    if(!type){
-      accountSearch.disabled = true;
-      accountSearch.value = "";
-      accountSelect.disabled = true;
-      accountSelect.innerHTML = '<option value="">Sélectionner un compte...</option>';
-      listInfo.textContent = "";
-      accountCard.classList.add("hidden");
-      accountTable.innerHTML = "";
-      return;
-    }
-    loadAccounts(type);
+searchInput.addEventListener("input",function(){
+
+  var q=searchInput.value.toLowerCase();
+
+  var list=filteredList.filter(function(item){
+    return item.label.toLowerCase().includes(q);
   });
 
-  accountSearch.addEventListener("input", function(){
-    var type = accountType.value;
-    if(!type){
-      return;
-    }
-    buildAccountOptions(type);
+  populateSelect(list);
+
+});
+
+setStatus("Chargement du dossier courant...","info");
+
+apiGet("/v1/sessions/dossier")
+  .then(function(text){
+
+    var dossier=JSON.parse(text);
+
+    renderDossier(dossier);
+
+    accountType.disabled=false;
+
+    setStatus("Connexion SSO valide","ok");
+
+  })
+  .catch(function(err){
+    setStatus(err.message,"err");
   });
 
-  accountSelect.addEventListener("change", function(){
-    var type = accountType.value;
-    var idx = accountSelect.value;
-    if(type === "" || idx === ""){
-      accountCard.classList.add("hidden");
-      accountTable.innerHTML = "";
-      return;
-    }
-    renderAccount(getFilteredAccounts(type)[Number(idx)]);
-  });
-
-  setStatus("Chargement du dossier courant...", "info");
-  apiGet("/v1/sessions/dossier")
-    .then(function(text){
-      var dossier = JSON.parse(text);
-      renderDossier(dossier);
-      accountType.disabled = false;
-      setStatus("Connexion SSO valide", "ok");
-    })
-    .catch(function(err){
-      setStatus(err.message, "err");
-    });
 })();
 </script>
 </body>
