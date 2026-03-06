@@ -462,6 +462,32 @@ searchInput.addEventListener("input",function(){
   });
   showMatches(filtered);
 });
+
+document.querySelectorAll('input[name="typeFilter"]').forEach(function(radio){
+  radio.addEventListener("change", function(){
+    selectedPill.classList.add("hidden");
+    selectedText.textContent="";
+    accountCard.classList.add("hidden");
+    accountTable.innerHTML="";
+    clearInsee();
+
+    var q = searchInput.value.toLowerCase().trim();
+    if(!q){
+      hideList();
+      return;
+    }
+
+    var selectedType = document.querySelector('input[name="typeFilter"]:checked').value;
+    var filtered = allAccounts.filter(function(a){
+      var lib=(a.raw&&a.raw.Lib)||"";
+      var code=(a.raw&&a.raw.Code)||"";
+      var matchText = a.name.toLowerCase().includes(q) || lib.toLowerCase().includes(q) || code.toLowerCase().includes(q);
+      var matchType = (selectedType==="all") || (a.type===selectedType);
+      return matchText && matchType;
+    });
+    showMatches(filtered);
+  });
+});
 document.addEventListener("click",function(e){
   if(!e.target.closest(".autocomplete-wrap")) hideList();
 });
