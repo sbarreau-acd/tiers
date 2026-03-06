@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>TiersX - Sélection compte</title>
+<title>Tiers - Sélection compte</title>
 <link rel="icon" href="data:,">
 <style>
 body{
@@ -15,7 +15,7 @@ body{
   background:#fff;
   border:1px solid #d9dde5;
   border-radius:10px;
-  max-width:860px;
+  max-width:1200px;
   padding:24px;
   box-shadow:0 2px 8px rgba(0,0,0,.04);
 }
@@ -23,12 +23,18 @@ h2{
   margin:0 0 20px;
   color:#003366;
 }
+.selection-layout{
+  display:grid;
+  grid-template-columns: minmax(360px, 430px) minmax(420px, 1fr);
+  gap:18px;
+  align-items:start;
+  margin-top:18px;
+}
 .controls{
   display:grid;
-  grid-template-columns: 220px 1fr;
+  grid-template-columns: 210px minmax(0, 1fr);
   gap:14px;
   align-items:end;
-  margin:18px 0;
 }
 .field label{
   display:block;
@@ -67,6 +73,10 @@ select:disabled{
   padding:14px;
   margin-top:18px;
 }
+.selection-layout .card{
+  margin-top:0;
+  height:100%;
+}
 .card h3{
   margin:0 0 10px;
   color:#003366;
@@ -89,6 +99,14 @@ td{
   background:#fff;
 }
 .hidden{ display:none; }
+@media (max-width: 900px){
+  .selection-layout{
+    grid-template-columns: 1fr;
+  }
+  .controls{
+    grid-template-columns: 1fr;
+  }
+}
 </style>
 </head>
 <body>
@@ -102,28 +120,32 @@ td{
     <table id="dossierTable"></table>
   </div>
 
-  <div class="controls">
-    <div class="field">
-      <label for="accountType">Type de compte</label>
-      <select id="accountType" disabled>
-        <option value="">Choisir...</option>
-        <option value="clients">Client</option>
-        <option value="fournisseurs">Fournisseur</option>
-      </select>
+  <div class="selection-layout">
+    <div class="card">
+      <div class="controls">
+        <div class="field">
+          <label for="accountType">Type de compte</label>
+          <select id="accountType" disabled>
+            <option value="">Choisir...</option>
+            <option value="clients">Client</option>
+            <option value="fournisseurs">Fournisseur</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="accountSelect">Compte</label>
+          <select id="accountSelect" disabled>
+            <option value="">Sélectionner un compte...</option>
+          </select>
+          <div class="subtle" id="listInfo"></div>
+        </div>
+      </div>
     </div>
 
-    <div class="field">
-      <label for="accountSelect">Compte</label>
-      <select id="accountSelect" disabled>
-        <option value="">Sélectionner un compte...</option>
-      </select>
-      <div class="subtle" id="listInfo"></div>
+    <div class="card hidden" id="accountCard">
+      <h3>Compte sélectionné</h3>
+      <table id="accountTable"></table>
     </div>
-  </div>
-
-  <div class="card hidden" id="accountCard">
-    <h3>Compte sélectionné</h3>
-    <table id="accountTable"></table>
   </div>
 </div>
 
