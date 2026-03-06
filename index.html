@@ -30,6 +30,7 @@ input:disabled{background:#f2f4f8;color:#666}
 .badge{border-radius:999px;padding:2px 8px;font-size:12px;font-weight:700;margin-right:8px;display:inline-flex;min-width:92px;justify-content:center}
 .badge-client{background:#e6f4ea;color:#0b6b2e;border:1px solid #0b6b2e}
 .badge-fournisseur{background:#eaf2ff;color:#0b4ea2;border:1px solid #0b4ea2}
+.value-badge{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;min-width:92px;box-sizing:border-box}
 .selected-pill{margin-top:10px;background:#eef4ff;padding:6px 10px;border-radius:999px;display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap}
 .clear-btn{background:#003366;color:#fff;border:0;border-radius:999px;padding:2px 8px;cursor:pointer}
 .subtle{font-size:13px;color:#5b6575;margin-top:4px}
@@ -151,7 +152,17 @@ function renderDossier(d){
 function renderAccount(a){
   accountTable.innerHTML="";
   var t=a.Tiers||{};
-  addRow(accountTable,"Type",a.AccountTypeLabel);
+
+  var trType=document.createElement("tr");
+  var thType=document.createElement("th");
+  var tdType=document.createElement("td");
+  thType.textContent="Type";
+  var badgeClass = a.AccountTypeLabel==="Client" ? "badge-client" : "badge-fournisseur";
+  tdType.innerHTML='<span class="value-badge '+badgeClass+'">'+escapeHtml(a.AccountTypeLabel||"")+'</span>';
+  trType.appendChild(thType);
+  trType.appendChild(tdType);
+  accountTable.appendChild(trType);
+
   addRow(accountTable,"Code",a.Code);
   if(!t.RaisonSociale){ addRow(accountTable,"Libellé",a.Lib); }
   addRow(accountTable,"Raison sociale",t.RaisonSociale);
