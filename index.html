@@ -57,6 +57,20 @@ select:disabled{
   background:#f2f4f8;
   color:#666;
 }
+.search-input{
+  width:100%;
+  padding:10px 12px;
+  border:1px solid #cfd6e4;
+  border-radius:8px;
+  font:inherit;
+  background:#fff;
+  margin-bottom:10px;
+  box-sizing:border-box;
+}
+.search-input:disabled{
+  background:#f2f4f8;
+  color:#666;
+}
 .status{
   margin:10px 0 18px;
   font-weight:600;
@@ -138,7 +152,8 @@ td{
 
       <div class="controls">
         <div class="field full">
-          <label for="accountSelect">Compte</label>
+          <label for="accountSearch">Compte</label>
+          <input type="text" id="accountSearch" class="search-input" placeholder="Rechercher un compte..." disabled>
           <select id="accountSelect" disabled>
             <option value="">Sélectionner un compte...</option>
           </select>
@@ -188,6 +203,7 @@ td{
   var accountCache = { clients: [], fournisseurs: [] };
 
   var accountType = document.getElementById("accountType");
+  var accountSearch = document.getElementById("accountSearch");
   var accountSelect = document.getElementById("accountSelect");
   var accountTable = document.getElementById("accountTable");
   var accountCard = document.getElementById("accountCard");
@@ -249,19 +265,50 @@ td{
     accountCard.classList.remove("hidden");
   }
 
+  function normalizeText(value){
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .toLowerCase()
+      .trim();
+  }
+
+  function getSortedAccounts(type){
+    return (accountCache[type] || []).slice().sort(function(a, b){
+      var aLabel = normalizeText((a && a.Lib) || (a && a.Code) || "");
+      var bLabel = normalizeText((b && b.Lib) || (b && b.Code) || "");
+      return aLabel.localeCompare(bLabel, "fr", { sensitivity: "base" });
+    });
+  }
+
+  function getFilteredAccounts(type){
+    var query = normalizeText(accountSearch.value);
+    var items = getSortedAccounts(type);
+
+    if(!query){
+      return items;
+    }
+
+    return items.filter(function(item){
+      var label = normalizeText(item && item.Lib);
+      var code = normalizeText(item && item.Code);
+      return label.indexOf(query) !== -1 || code.indexOf(query) !== -1;
+    });
+  }
+
   function buildAccountOptions(type){
-    var items = accountCache[type] || [];
+    var items = getFilteredAccounts(type);
     accountSelect.innerHTML = '<option value="">Sélectionner un compte...</option>';
 
     items.forEach(function(item, index){
       var option = document.createElement("option");
       option.value = String(index);
-      option.textContent = item.Lib || item.Code || "Compte";
+      option.textContent = ((item && item.Code) ? (item.Code + " — ") : "") + (item.Lib || item.Code || (type === "clients" ? "Client sans libellé" : "Fournisseur sans libellé"));
       accountSelect.appendChild(option);
     });
 
     accountSelect.disabled = items.length === 0;
-    listInfo.textContent = items.length ? (items.length + " compte(s) disponible(s)") : "Aucun compte disponible";
+    listInfo.textContent = items.length ? (items.length + " compte(s) affiché(s)") : "Aucun compte disponible";
     accountCard.classList.add("hidden");
     accountTable.innerHTML = "";
   }
@@ -269,6 +316,8 @@ td{
   function loadAccounts(type){
     var path = type === "clients" ? "/v1/compta/comptes/clients" : "/v1/compta/comptes/fournisseurs";
     setStatus("Chargement de la liste des comptes...", "info");
+    accountSearch.disabled = true;
+    accountSearch.value = "";
     accountSelect.disabled = true;
     accountSelect.innerHTML = '<option value="">Chargement...</option>';
     accountCard.classList.add("hidden");
@@ -280,11 +329,13 @@ td{
           throw new Error("Réponse inattendue pour la liste des comptes");
         }
         accountCache[type] = data;
+        accountSearch.disabled = false;
         buildAccountOptions(type);
         setStatus("Connexion SSO valide", "ok");
       })
       .catch(function(err){
         accountCache[type] = [];
+        accountSearch.disabled = true;
         buildAccountOptions(type);
         setStatus(err.message, "err");
       });
@@ -293,6 +344,8 @@ td{
   accountType.addEventListener("change", function(){
     var type = accountType.value;
     if(!type){
+      accountSearch.disabled = true;
+      accountSearch.value = "";
       accountSelect.disabled = true;
       accountSelect.innerHTML = '<option value="">Sélectionner un compte...</option>';
       listInfo.textContent = "";
@@ -303,6 +356,14 @@ td{
     loadAccounts(type);
   });
 
+  accountSearch.addEventListener("input", function(){
+    var type = accountType.value;
+    if(!type){
+      return;
+    }
+    buildAccountOptions(type);
+  });
+
   accountSelect.addEventListener("change", function(){
     var type = accountType.value;
     var idx = accountSelect.value;
@@ -311,7 +372,7 @@ td{
       accountTable.innerHTML = "";
       return;
     }
-    renderAccount(accountCache[type][Number(idx)]);
+    renderAccount(getFilteredAccounts(type)[Number(idx)]);
   });
 
   setStatus("Chargement du dossier courant...", "info");
