@@ -8,338 +8,379 @@
 body{font-family:"Segoe UI",Arial,sans-serif;background:#f5f6f8;padding:40px;color:#1f2a44}
 .box{background:#fff;border:1px solid #d9dde5;border-radius:10px;max-width:1200px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
 h2{margin:0 0 20px;color:#003366}
-.selection-layout{display:grid;grid-template-columns:minmax(420px,520px) minmax(420px,1fr);gap:18px;margin-top:18px}
 .card{background:#f7f8fb;border:1px solid #e2e6ef;border-radius:8px;padding:14px;margin-top:18px}
 .card h3{margin:0 0 10px;color:#003366;font-size:16px}
 table{width:100%;border-collapse:collapse}
-th{text-align:left;width:220px;background:#eef2fa;padding:8px;border:1px solid #e2e6ef}
+th{text-align:left;background:#eef2fa;padding:8px;border:1px solid #e2e6ef}
 td{padding:8px;border:1px solid #e2e6ef;background:#fff}
 .hidden{display:none}
 .status{margin:10px 0 18px;font-weight:600}
 .ok{color:#0b6b2e}.err{color:#b00020}.info{color:#003366}
-.toolbar{display:flex;gap:10px;justify-content:flex-end;margin-top:10px}
-.btn{border:0;border-radius:8px;padding:10px 14px;cursor:pointer;font-weight:600;color:white}
+.toolbar{display:flex;gap:10px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap}
+.btn{border:0;border-radius:8px;padding:10px 14px;cursor:pointer;font-weight:600;color:#fff}
 .btn-client{background:#0b6b2e}
 .btn-fournisseur{background:#0b4ea2}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 input{width:100%;padding:10px 12px;border:1px solid #cfd6e4;border-radius:8px;box-sizing:border-box;font:inherit}
 input:disabled{background:#f2f4f8;color:#666}
-.autocomplete-list{position:absolute;background:white;border:1px solid #cfd6e4;border-radius:8px;max-height:300px;overflow:auto;width:100%;z-index:20;box-shadow:0 8px 20px rgba(0,0,0,.08);margin-top:6px}
+.autocomplete-wrap{position:relative}
+.autocomplete-list{position:absolute;background:#fff;border:1px solid #cfd6e4;border-radius:8px;max-height:300px;overflow:auto;width:100%;z-index:20;box-shadow:0 8px 20px rgba(0,0,0,.08);margin-top:6px}
 .autocomplete-item{padding:10px;cursor:pointer;border-bottom:1px solid #eee}
 .autocomplete-item:hover{background:#eef4ff}
 .badge{border-radius:999px;padding:2px 8px;font-size:12px;font-weight:700;margin-right:8px;display:inline-flex;min-width:92px;justify-content:center}
 .badge-client{background:#e6f4ea;color:#0b6b2e;border:1px solid #0b6b2e}
 .badge-fournisseur{background:#eaf2ff;color:#0b4ea2;border:1px solid #0b4ea2}
-.selected-pill{margin-top:10px;background:#eef4ff;padding:6px 10px;border-radius:999px;display:inline-flex;gap:8px;align-items:center}
-.clear-btn{background:#003366;color:white;border:0;border-radius:999px;padding:2px 8px;cursor:pointer}
-.autocomplete-wrap{position:relative}
+.selected-pill{margin-top:10px;background:#eef4ff;padding:6px 10px;border-radius:999px;display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap}
+.clear-btn{background:#003366;color:#fff;border:0;border-radius:999px;padding:2px 8px;cursor:pointer}
 .subtle{font-size:13px;color:#5b6575;margin-top:4px}
-@media (max-width:900px){.selection-layout{grid-template-columns:1fr}}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:900px){.grid-2{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div class="box">
-<h2>Sélection d’un compte client ou fournisseur</h2>
-<div id="status" class="status info">Chargement...</div>
+  <h2>Sélection d’un compte client ou fournisseur</h2>
+  <div id="status" class="status info">Chargement...</div>
 
-<div class="card">
-<h3>Dossier courant</h3>
-<table id="dossierTable"></table>
-</div>
+  <div class="card">
+    <h3>Dossier courant</h3>
+    <table id="dossierTable"></table>
+  </div>
 
-<div class="toolbar">
-<button id="exportClients" class="btn btn-client" disabled>Exporter clients CSV</button>
-<button id="exportFournisseurs" class="btn btn-fournisseur" disabled>Exporter fournisseurs CSV</button>
-</div>
+  <div class="toolbar">
+    <button id="exportClients" class="btn btn-client" disabled>Exporter clients CSV</button>
+    <button id="exportFournisseurs" class="btn btn-fournisseur" disabled>Exporter fournisseurs CSV</button>
+  </div>
 
-<div class="selection-layout">
-<div class="card">
-<div class="autocomplete-wrap">
-<label for="searchInput">Compte</label>
-<input id="searchInput" placeholder="Rechercher un client ou un fournisseur..." autocomplete="off" disabled>
-<div id="autocompleteList" class="autocomplete-list hidden"></div>
-<div class="subtle" id="listInfo"></div>
-<div id="selectedPill" class="selected-pill hidden">
-<span id="selectedText"></span>
-<button id="clearSelection" class="clear-btn" type="button">Effacer</button>
-</div>
-</div>
-</div>
+  <div class="card">
+    <div class="autocomplete-wrap">
+      <label for="searchInput">Compte</label>
+      <input id="searchInput" placeholder="Rechercher un client ou un fournisseur..." autocomplete="off" disabled>
+      <div id="autocompleteList" class="autocomplete-list hidden"></div>
+      <div id="selectedPill" class="selected-pill hidden">
+        <span id="selectedText"></span>
+        <button id="clearSelection" class="clear-btn" type="button">Effacer</button>
+      </div>
+    </div>
+  </div>
 
-<div class="card hidden" id="accountCard">
-<h3>Compte sélectionné</h3>
-<table id="accountTable"></table>
-</div>
-</div>
+  <div class="grid-2">
+    <div class="card hidden" id="accountCard">
+      <h3>Compte sélectionné</h3>
+      <table id="accountTable"></table>
+    </div>
+
+    <div class="card hidden" id="inseeCard">
+      <h3>Données INSEE</h3>
+      <table id="inseeTable"></table>
+      <div id="financesWrap" class="hidden" style="margin-top:14px;">
+        <h3 style="margin-top:0;">Éléments financiers</h3>
+        <table id="financesTable">
+          <thead>
+            <tr><th>Période</th><th>CA</th><th>Résultat net</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="inseeInfo" class="subtle hidden"></div>
+    </div>
+  </div>
 </div>
 
 <script>
 (function(){
-
 function setStatus(text, cls){
-  var el = document.getElementById("status");
-  el.textContent = text;
-  el.className = "status " + cls;
+  var el=document.getElementById("status");
+  el.textContent=text;
+  el.className="status "+cls;
 }
-
+function escapeHtml(s){
+  return String(s||"").replace(/[&<>"]/g,function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];
+  });
+}
 function csvEscape(v){
-  if(v == null) return '""';
+  if(v==null) return '""';
   return '"' + String(v).replace(/"/g,'""') + '"';
 }
-
-function download(name, content){
-  var blob = new Blob([content], {type:"text/csv;charset=utf-8;"});
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement("a");
-  a.href = url;
-  a.download = name;
+function download(name,content){
+  var blob=new Blob([content],{type:"text/csv;charset=utf-8;"});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement("a");
+  a.href=url;
+  a.download=name;
   document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
 }
-
 function exportCsv(type){
-  var rows = [];
-  rows.push([
-    "Type","Code","Libellé","Raison sociale","SIRET","TVA Intracom","Email","Téléphone"
-  ].map(csvEscape).join(";"));
-
-  var data = allAccounts
-    .filter(function(a){ return a.type === type; })
-    .sort(function(a,b){
-      return (a.name || "").localeCompare(b.name || "", "fr", {sensitivity:"base"});
-    });
-
-  data.forEach(function(a){
-    var t = a.raw.Tiers || {};
+  var rows=[["Type","Code","Libellé","Raison sociale","SIRET","TVA Intracom","Email","Téléphone"].map(csvEscape).join(";")];
+  allAccounts.filter(function(a){return a.type===type;}).sort(function(a,b){
+    return (a.name||"").localeCompare(b.name||"","fr",{sensitivity:"base"});
+  }).forEach(function(a){
+    var t=a.raw.Tiers||{};
     rows.push([
-      a.typeLabel,
-      a.raw.Code || "",
-      a.raw.Lib || "",
-      t.RaisonSociale || "",
-      t.Siren || "",
-      t.NumeroIntracom || "",
-      t.Email || "",
-      t.Telephone || ""
+      a.typeLabel,a.raw.Code||"",a.raw.Lib||"",t.RaisonSociale||"",t.Siren||t.SIREN||"",t.NumeroIntracom||"",t.Email||"",t.Telephone||""
     ].map(csvEscape).join(";"));
   });
-
-  var d = new Date();
-  var pad = function(n){ return String(n).padStart(2,"0"); };
-  var filename = type + "_" + d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + "_" + pad(d.getHours()) + pad(d.getMinutes()) + ".csv";
-  download(filename, "\uFEFF" + rows.join("\n"));
+  var d=new Date();
+  var pad=function(n){return String(n).padStart(2,"0");};
+  var filename=type+"_"+d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate())+"_"+pad(d.getHours())+pad(d.getMinutes())+".csv";
+  download(filename,"\uFEFF"+rows.join("\n"));
 }
-
-function addRow(table, label, value){
-  if(value === undefined || value === null || String(value).trim() === "") return;
-  var tr = document.createElement("tr");
-  var th = document.createElement("th");
-  var td = document.createElement("td");
-  th.textContent = label;
-  td.textContent = value;
+function addRow(table,label,value){
+  if(value===undefined||value===null||String(value).trim()==="") return;
+  var tr=document.createElement("tr");
+  var th=document.createElement("th");
+  var td=document.createElement("td");
+  th.textContent=label;
+  td.textContent=value;
   tr.appendChild(th);
   tr.appendChild(td);
   table.appendChild(tr);
 }
-
+function renderDossier(d){
+  dossierTable.innerHTML="";
+  dossierTable.insertAdjacentHTML("beforeend",
+    "<tr><th>Nom</th><td>"+escapeHtml(d.Nom||"")+"</td><th>SIRET</th><td>"+escapeHtml(d.SIRET||"")+"</td></tr>"+
+    "<tr><th>Adresse</th><td colspan='3'>"+escapeHtml(((d.Adresse1||"")+" "+(d.Adresse2||"")).trim())+"</td></tr>"+
+    "<tr><th>Code postal</th><td>"+escapeHtml(d.CodePostal||"")+"</td><th>Ville</th><td>"+escapeHtml(d.Ville||"")+"</td></tr>"
+  );
+}
 function renderAccount(a){
-  accountTable.innerHTML = "";
-  var t = a.Tiers || {};
-  addRow(accountTable, "Type", a.AccountTypeLabel);
-  addRow(accountTable, "Code", a.Code);
-  if(!t.RaisonSociale){
-    addRow(accountTable, "Libellé", a.Lib);
-  }
-  addRow(accountTable, "Raison sociale", t.RaisonSociale);
-  addRow(accountTable, "SIREN", t.Siren);
-  addRow(accountTable, "TVA intracom", t.NumeroIntracom);
-  addRow(accountTable, "Email", t.Email);
-  addRow(accountTable, "Téléphone", t.Telephone);
+  accountTable.innerHTML="";
+  var t=a.Tiers||{};
+  addRow(accountTable,"Type",a.AccountTypeLabel);
+  addRow(accountTable,"Code",a.Code);
+  if(!t.RaisonSociale){ addRow(accountTable,"Libellé",a.Lib); }
+  addRow(accountTable,"Raison sociale",t.RaisonSociale);
+  addRow(accountTable,"SIREN",t.Siren||t.SIREN);
+  addRow(accountTable,"TVA intracom",t.NumeroIntracom);
+  addRow(accountTable,"Email",t.Email);
+  addRow(accountTable,"Téléphone",t.Telephone);
   accountCard.classList.remove("hidden");
 }
+function clearInsee(){
+  inseeTable.innerHTML="";
+  financesBody.innerHTML="";
+  inseeCard.classList.add("hidden");
+  financesWrap.classList.add("hidden");
+  inseeInfo.textContent="";
+  inseeInfo.classList.add("hidden");
+}
+function stringify(v){
+  return (v===undefined||v===null||String(v).trim()==="") ? "" : String(v);
+}
+function sortKey(f){
+  var keys=[f.annee,f.annee_exercice,f.exercice,f.date_cloture_exercice,f.date_cloture];
+  for(var i=0;i<keys.length;i++){
+    var v=keys[i];
+    if(v===undefined||v===null||String(v).trim()==="") continue;
+    var t=Date.parse(v);
+    if(!isNaN(t)) return t;
+    var n=parseInt(v,10);
+    if(!isNaN(n)) return n;
+  }
+  return 0;
+}
+function financeLabel(f){
+  return stringify(f.annee||f.annee_exercice||f.exercice||f.date_cloture_exercice||f.date_cloture||"");
+}
+function renderInsee(data){
+  clearInsee();
+  var result=(data&&data.results&&data.results.length)?data.results[0]:null;
+  if(!result){
+    inseeInfo.textContent="Aucune donnée INSEE trouvée.";
+    inseeInfo.classList.remove("hidden");
+    inseeCard.classList.remove("hidden");
+    return;
+  }
+  var siege=result.siege||{};
+  addRow(inseeTable,"Raison sociale",result.nom_raison_sociale);
+  addRow(inseeTable,"Sigle",result.sigle);
+  addRow(inseeTable,"NAF",siege.activite_principale);
+  addRow(inseeTable,"Adresse",siege.adresse);
+  addRow(inseeTable,"Complément",siege.complement_adresse);
+  addRow(inseeTable,"Catégorie entreprise",result.categorie_entreprise);
+  addRow(inseeTable,"DateMAJ Insee",result.date_mise_a_jour_insee);
 
+  var finances=Array.isArray(result.finances)?result.finances.slice():[];
+  if(finances.length){
+    finances.sort(function(a,b){ return sortKey(b)-sortKey(a); });
+    finances.slice(0,3).forEach(function(f){
+      var tr=document.createElement("tr");
+      var values=[financeLabel(f), stringify(f.ca), stringify(f.resultat_net)];
+      values.forEach(function(v){
+        var td=document.createElement("td");
+        td.textContent=v;
+        tr.appendChild(td);
+      });
+      financesBody.appendChild(tr);
+    });
+    financesWrap.classList.remove("hidden");
+  } else {
+    inseeInfo.textContent="Aucune donnée financière disponible.";
+    inseeInfo.classList.remove("hidden");
+  }
+  inseeCard.classList.remove("hidden");
+}
+function fetchInseeForAccount(a){
+  clearInsee();
+  var t=a&&a.Tiers?a.Tiers:{};
+  var siret=(t.Siren||t.SIREN||"").toString().trim();
+  if(!siret) return;
+  var url="https://recherche-entreprises.api.gouv.fr/search?q="+encodeURIComponent(siret)+"&type_personne=dirigeant&limite_matching_etablissements=1&minimal=true&include=siege%2Cfinances&page=1&per_page=10&page_etablissements=1";
+  fetch(url,{method:"GET",headers:{accept:"application/json"}})
+    .then(function(r){
+      if(!r.ok) throw new Error("Erreur recherche-entreprises HTTP "+r.status);
+      return r.json();
+    })
+    .then(renderInsee)
+    .catch(function(err){
+      inseeInfo.textContent=err.message;
+      inseeInfo.classList.remove("hidden");
+      inseeCard.classList.remove("hidden");
+    });
+}
 function hideList(){
   list.classList.add("hidden");
 }
-
-function buildUnifiedList(clients, fournisseurs){
-  allAccounts = [];
-
+function buildUnifiedList(clients,fournisseurs){
+  allAccounts=[];
   clients.forEach(function(c){
-    allAccounts.push({
-      raw:c,
-      type:"client",
-      typeLabel:"Client",
-      name:(c.Tiers && c.Tiers.RaisonSociale) || c.Lib || ""
-    });
+    allAccounts.push({raw:c,type:"client",typeLabel:"Client",name:(c.Tiers&&c.Tiers.RaisonSociale)||c.Lib||""});
   });
-
   fournisseurs.forEach(function(f){
-    allAccounts.push({
-      raw:f,
-      type:"fournisseur",
-      typeLabel:"Fournisseur",
-      name:(f.Tiers && f.Tiers.RaisonSociale) || f.Lib || ""
-    });
+    allAccounts.push({raw:f,type:"fournisseur",typeLabel:"Fournisseur",name:(f.Tiers&&f.Tiers.RaisonSociale)||f.Lib||""});
   });
-
-  allAccounts.forEach(function(a){
-    a.raw.AccountTypeLabel = a.typeLabel;
-  });
-
-  listInfo.textContent = allAccounts.length + " compte(s) disponible(s)";
-  document.getElementById("exportClients").disabled = allAccounts.filter(function(a){ return a.type==="client"; }).length === 0;
-  document.getElementById("exportFournisseurs").disabled = allAccounts.filter(function(a){ return a.type==="fournisseur"; }).length === 0;
-  searchInput.disabled = false;
+  allAccounts.forEach(function(a){ a.raw.AccountTypeLabel=a.typeLabel; });
+  exportClients.disabled=allAccounts.filter(function(a){return a.type==="client";}).length===0;
+  exportFournisseurs.disabled=allAccounts.filter(function(a){return a.type==="fournisseur";}).length===0;
+  searchInput.disabled=false;
 }
-
 function showMatches(arr){
-  list.innerHTML = "";
-  matches = arr;
-
+  list.innerHTML="";
+  matches=arr;
   if(!matches.length){
     hideList();
     return;
   }
-
   matches.forEach(function(m){
-    var div = document.createElement("div");
-    div.className = "autocomplete-item";
-    div.innerHTML =
-      '<span class="badge ' + (m.type==="client" ? 'badge-client' : 'badge-fournisseur') + '">' + m.typeLabel + '</span>' +
-      '<span>' + escapeHtml(m.name) + '</span>';
-
-    div.addEventListener("mousedown", function(e){
+    var div=document.createElement("div");
+    div.className="autocomplete-item";
+    div.innerHTML='<span class="badge '+(m.type==="client"?'badge-client':'badge-fournisseur')+'">'+m.typeLabel+'</span><span>'+escapeHtml(m.name)+'</span>';
+    div.addEventListener("mousedown",function(e){
       e.preventDefault();
-      searchInput.value = m.name;
-      selectedText.textContent = m.typeLabel + " — " + m.name;
+      searchInput.value=m.name;
+      selectedText.textContent=m.typeLabel+" — "+m.name;
       selectedPill.classList.remove("hidden");
       hideList();
       renderAccount(m.raw);
+      fetchInseeForAccount(m.raw);
     });
-
     list.appendChild(div);
   });
-
   list.classList.remove("hidden");
 }
-
-function escapeHtml(s){
-  return String(s || "").replace(/[&<>"]/g, function(c){
-    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];
-  });
-}
-
 function apiGet(path){
-  return fetch(apiUrl + path, {
+  return fetch(apiUrl+path,{
     method:"GET",
     headers:{accept:"text/plain","UUID":uuid}
   }).then(function(r){
     return r.text().then(function(t){
-      if(!r.ok) throw new Error("Erreur HTTP " + r.status + " sur " + path);
+      if(!r.ok) throw new Error("Erreur HTTP "+r.status+" sur "+path);
       return t;
     });
   });
 }
 
-var params = new URLSearchParams(location.search);
-var cnx = params.get("CNX") || params.get("cnx") || "";
-var uuid = params.get("UUID") || params.get("uuid") || "";
-var referrer = document.referrer || "";
-var apiOverride = params.get("api") || "";
+var params=new URLSearchParams(location.search);
+var cnx=params.get("CNX")||params.get("cnx")||"";
+var uuid=params.get("UUID")||params.get("uuid")||"";
+var referrer=document.referrer||"";
+var apiOverride=params.get("api")||"";
+var apiUrl=null;
 
-var apiUrl = null;
 if(apiOverride){
-  apiUrl = apiOverride.replace(/\/+$/, "");
-} else if(referrer && cnx){
+  apiUrl=apiOverride.replace(/\/+$/,"");
+} else if(referrer&&cnx){
   try{
-    var ref = new URL(referrer);
-    apiUrl = ref.origin + "/" + cnx + "/api";
+    var ref=new URL(referrer);
+    apiUrl=ref.origin+"/"+cnx+"/api";
   }catch(e){}
 }
 
-if(!apiUrl || !uuid){
-  setStatus("Paramètres CNX/UUID ou referrer manquants. Utilisez ?CNX=...&UUID=... ou ajoutez &api=https://.../cnx/api", "err");
+if(!apiUrl||!uuid){
+  setStatus("Paramètres CNX/UUID ou referrer manquants. Utilisez ?CNX=...&UUID=... ou ajoutez &api=https://.../cnx/api","err");
   return;
 }
 
-var allAccounts = [];
-var matches = [];
-var dossierTable = document.getElementById("dossierTable");
-var accountCard = document.getElementById("accountCard");
-var accountTable = document.getElementById("accountTable");
-var searchInput = document.getElementById("searchInput");
-var list = document.getElementById("autocompleteList");
-var selectedPill = document.getElementById("selectedPill");
-var selectedText = document.getElementById("selectedText");
-var clearSelection = document.getElementById("clearSelection");
-var listInfo = document.getElementById("listInfo");
+var allAccounts=[];
+var matches=[];
+var dossierTable=document.getElementById("dossierTable");
+var accountCard=document.getElementById("accountCard");
+var accountTable=document.getElementById("accountTable");
+var inseeCard=document.getElementById("inseeCard");
+var inseeTable=document.getElementById("inseeTable");
+var financesWrap=document.getElementById("financesWrap");
+var financesBody=document.querySelector("#financesTable tbody");
+var inseeInfo=document.getElementById("inseeInfo");
+var searchInput=document.getElementById("searchInput");
+var list=document.getElementById("autocompleteList");
+var selectedPill=document.getElementById("selectedPill");
+var selectedText=document.getElementById("selectedText");
+var clearSelection=document.getElementById("clearSelection");
+var exportClients=document.getElementById("exportClients");
+var exportFournisseurs=document.getElementById("exportFournisseurs");
 
-document.getElementById("exportClients").addEventListener("click", function(){ exportCsv("client"); });
-document.getElementById("exportFournisseurs").addEventListener("click", function(){ exportCsv("fournisseur"); });
-
-clearSelection.addEventListener("click", function(e){
+exportClients.addEventListener("click",function(){ exportCsv("client"); });
+exportFournisseurs.addEventListener("click",function(){ exportCsv("fournisseur"); });
+clearSelection.addEventListener("click",function(e){
   e.preventDefault();
-  searchInput.value = "";
+  searchInput.value="";
   selectedPill.classList.add("hidden");
-  selectedText.textContent = "";
+  selectedText.textContent="";
   accountCard.classList.add("hidden");
-  accountTable.innerHTML = "";
+  accountTable.innerHTML="";
+  clearInsee();
   hideList();
   searchInput.focus();
 });
-
-searchInput.addEventListener("input", function(){
-  var q = searchInput.value.toLowerCase().trim();
-
+searchInput.addEventListener("input",function(){
+  var q=searchInput.value.toLowerCase().trim();
   selectedPill.classList.add("hidden");
-  selectedText.textContent = "";
+  selectedText.textContent="";
   accountCard.classList.add("hidden");
-  accountTable.innerHTML = "";
-
+  accountTable.innerHTML="";
+  clearInsee();
   if(!q){
     hideList();
     return;
   }
-
-  var filtered = allAccounts.filter(function(a){
-    var lib = (a.raw && a.raw.Lib) || "";
-    var code = (a.raw && a.raw.Code) || "";
+  var filtered=allAccounts.filter(function(a){
+    var lib=(a.raw&&a.raw.Lib)||"";
+    var code=(a.raw&&a.raw.Code)||"";
     return a.name.toLowerCase().includes(q) || lib.toLowerCase().includes(q) || code.toLowerCase().includes(q);
   });
-
   showMatches(filtered);
 });
-
-document.addEventListener("click", function(e){
-  if(!e.target.closest(".autocomplete-wrap")){
-    hideList();
-  }
+document.addEventListener("click",function(e){
+  if(!e.target.closest(".autocomplete-wrap")) hideList();
 });
 
-setStatus("Chargement du dossier et des comptes...", "info");
-
+setStatus("Chargement du dossier et des comptes...","info");
 Promise.all([
   apiGet("/v1/sessions/dossier"),
   apiGet("/v1/compta/comptes/clients"),
   apiGet("/v1/compta/comptes/fournisseurs")
 ]).then(function(res){
-  var d = JSON.parse(res[0]);
-  addRow(dossierTable,"Nom",d.Nom);
-  addRow(dossierTable,"Prénom",d.Prenom);
-  addRow(dossierTable,"Adresse ligne 1",d.Adresse1);
-  addRow(dossierTable,"Adresse ligne 2",d.Adresse2);
-  addRow(dossierTable,"Code postal",d.CodePostal);
-  addRow(dossierTable,"Ville",d.Ville);
-  addRow(dossierTable,"SIRET",d.SIRET);
-
+  renderDossier(JSON.parse(res[0]));
   buildUnifiedList(JSON.parse(res[1]), JSON.parse(res[2]));
-  setStatus("Connexion SSO valide", "ok");
+  setStatus("Connexion SSO valide","ok");
 }).catch(function(err){
-  setStatus(err.message, "err");
+  setStatus(err.message,"err");
 });
-
 })();
 </script>
 </body>
