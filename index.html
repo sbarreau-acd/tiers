@@ -27,14 +27,13 @@ td{padding:8px 10px;border:1px solid #e2e6ef;background:#fff}
 .autocomplete-list{position:absolute;top:100%;left:0;right:0;z-index:20;margin-top:6px;background:#fff;border:1px solid #cfd6e4;border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,.08);max-height:360px;overflow-y:auto}
 .autocomplete-item{padding:10px 12px;border-bottom:1px solid #eef2fa;cursor:pointer}
 .autocomplete-item:hover,.autocomplete-item.active{background:#eef4ff}
-.item-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.item-code{font-weight:700}
+.item-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .item-name{color:#1f2a44}
-.badge{display:inline-flex;align-items:center;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:700}
+.badge{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:700;min-width:92px;box-sizing:border-box}
 .badge-client{background:#e6f4ea;color:#0b6b2e;border:1px solid #0b6b2e}
 .badge-fournisseur{background:#eaf2ff;color:#0b4ea2;border:1px solid #0b4ea2}
-.row-client .item-code,.row-client .item-name{color:#0b6b2e}
-.row-fournisseur .item-code,.row-fournisseur .item-name{color:#0b4ea2}
+.row-client .item-name{color:#0b6b2e}
+.row-fournisseur .item-name{color:#0b4ea2}
 .selected-pill{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:8px 10px;background:#eef4ff;border:1px solid #cfe0ff;border-radius:999px;color:#003366;font-size:13px;font-weight:600;flex-wrap:wrap}
 .clear-btn{border:0;background:#003366;color:#fff;border-radius:999px;padding:2px 8px;cursor:pointer;font-size:12px}
 
@@ -181,7 +180,7 @@ function buildUnifiedList(clients,fournisseurs){
       name:name||"",
       type:"client",
       typeLabel:"Client",
-      label:(i.Code||"")+" — "+(name||"")
+      label:name||""
     });
   });
 
@@ -193,7 +192,7 @@ function buildUnifiedList(clients,fournisseurs){
       name:name||"",
       type:"fournisseur",
       typeLabel:"Fournisseur",
-      label:(i.Code||"")+" — "+(name||"")
+      label:name||""
     });
   });
 
@@ -212,12 +211,16 @@ function buildUnifiedList(clients,fournisseurs){
   listInfo.textContent=result.length+" compte(s) disponible(s)";
 }
 
+function hideList(){
+  list.classList.add("hidden");
+}
+
 function showMatches(arr){
   list.innerHTML="";
   matches=arr.slice(0,60);
 
   if(!matches.length){
-    list.classList.add("hidden");
+    hideList();
     return;
   }
 
@@ -227,10 +230,12 @@ function showMatches(arr){
     row.innerHTML =
       '<div class="item-line">' +
         '<span class="badge ' + (m.type==="client" ? 'badge-client' : 'badge-fournisseur') + '">' + m.typeLabel + '</span>' +
-        '<span class="item-code">' + escapeHtml(m.code) + '</span>' +
-        '<span class="item-name">— ' + escapeHtml(m.name) + '</span>' +
+        '<span class="item-name">' + escapeHtml(m.name) + '</span>' +
       '</div>';
-    row.onclick=function(){ selectMatch(i); };
+    row.onmousedown=function(e){
+      e.preventDefault();
+      selectMatch(i);
+    };
     list.appendChild(row);
   });
 
@@ -244,7 +249,7 @@ function selectMatch(i){
   searchInput.value=m.label;
   selectedText.textContent=m.typeLabel+" — "+m.label;
   selectedPill.classList.remove("hidden");
-  list.classList.add("hidden");
+  hideList();
   renderAccount(m.raw);
 }
 
@@ -252,15 +257,14 @@ function refresh(){
   var q=searchInput.value.toLowerCase().trim();
 
   if(!q){
-    showMatches(allAccounts);
+    hideList();
     return;
   }
 
   var r=allAccounts.filter(function(x){ return x.search.includes(q); });
 
   if(r.length===1){
-    var only=r[0];
-    matches=[only];
+    matches=[r[0]];
     selectMatch(0);
     return;
   }
@@ -273,6 +277,7 @@ function clearSelected(){
   selectedPill.classList.add("hidden");
   accountCard.classList.add("hidden");
   accountTable.innerHTML="";
+  hideList();
 }
 
 function loadAccounts(){
@@ -291,31 +296,33 @@ function loadAccounts(){
 
     buildUnifiedList(clients,fournisseurs);
     searchInput.disabled=false;
-    searchInput.focus();
     setStatus("Connexion SSO valide","ok");
   }).catch(function(e){
     setStatus(e.message,"err");
   });
 }
 
-searchInput.onfocus=function(){
-  if(!searchInput.disabled) refresh();
-};
+searchInput.addEventListener("focus",function(){
+  if(!searchInput.disabled && searchInput.value.trim()!==""){
+    refresh();
+  }
+});
 
-searchInput.oninput=function(){
-  clearSelected();
+searchInput.addEventListener("input",function(){
+  selectedPill.classList.add("hidden");
+  accountCard.classList.add("hidden");
+  accountTable.innerHTML="";
   refresh();
-};
+});
 
-clearSelection.onclick=function(){
+clearSelection.addEventListener("click",function(){
   clearSelected();
   searchInput.focus();
-  refresh();
-};
+});
 
 document.addEventListener("click",function(e){
   if(!e.target.closest(".autocomplete-wrap")){
-    list.classList.add("hidden");
+    hideList();
   }
 });
 
