@@ -2,111 +2,302 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>SSO - Informations dossier</title>
-<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Tiers - Sélection compte</title>
 <link rel="icon" href="data:,">
 <style>
-body{font-family:Segoe UI,Arial,sans-serif;padding:40px;background:#f5f6f8;color:#1f2937}
-.box{background:#fff;padding:24px;border-radius:10px;max-width:760px;border:1px solid #d9dee8;box-shadow:0 2px 10px rgba(0,0,0,.04)}
-h2{margin:0 0 18px;color:#003366}
-.status{margin-bottom:16px;font-weight:600}
-.ok{color:#0b6b2e}
-.err{color:#b00020}
-.table{width:100%;border-collapse:collapse;margin-top:10px}
-.table th,.table td{border:1px solid #e2e6ef;padding:10px 12px;text-align:left;vertical-align:top}
-.table th{background:#eef2fa;color:#1f2a44;width:220px}
-.hidden{display:none}
-.small{font-size:12px;color:#6b7280;margin-top:8px}
+body{
+  font-family:"Segoe UI", Arial, sans-serif;
+  background:#f5f6f8;
+  padding:40px;
+  color:#1f2a44;
+}
+.box{
+  background:#fff;
+  border:1px solid #d9dde5;
+  border-radius:10px;
+  max-width:860px;
+  padding:24px;
+  box-shadow:0 2px 8px rgba(0,0,0,.04);
+}
+h2{
+  margin:0 0 20px;
+  color:#003366;
+}
+.controls{
+  display:grid;
+  grid-template-columns: 220px 1fr;
+  gap:14px;
+  align-items:end;
+  margin:18px 0;
+}
+.field label{
+  display:block;
+  font-weight:600;
+  margin-bottom:6px;
+  color:#003366;
+}
+select{
+  width:100%;
+  padding:10px 12px;
+  border:1px solid #cfd6e4;
+  border-radius:8px;
+  font:inherit;
+  background:#fff;
+}
+select:disabled{
+  background:#f2f4f8;
+  color:#666;
+}
+.status{
+  margin:10px 0 18px;
+  font-weight:600;
+}
+.ok{ color:#0b6b2e; }
+.err{ color:#b00020; }
+.info{ color:#003366; }
+.subtle{
+  font-size:13px;
+  color:#5b6575;
+  margin-top:4px;
+}
+.card{
+  background:#f7f8fb;
+  border:1px solid #e2e6ef;
+  border-radius:8px;
+  padding:14px;
+  margin-top:18px;
+}
+.card h3{
+  margin:0 0 10px;
+  color:#003366;
+  font-size:16px;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+th{
+  text-align:left;
+  width:220px;
+  background:#eef2fa;
+  padding:8px 10px;
+  border:1px solid #e2e6ef;
+}
+td{
+  padding:8px 10px;
+  border:1px solid #e2e6ef;
+  background:#fff;
+}
+.hidden{ display:none; }
 </style>
 </head>
 <body>
 <div class="box">
-  <h2>Connexion SSO</h2>
-  <div id="status" class="status">Connexion en cours...</div>
-  <table id="resultTable" class="table hidden"></table>
-  <div id="error" class="err"></div>
-  <div id="debug" class="small"></div>
+  <h2>Sélection d’un compte client ou fournisseur</h2>
+
+  <div id="status" class="status info">Chargement...</div>
+
+  <div class="card">
+    <h3>Dossier courant</h3>
+    <table id="dossierTable"></table>
+  </div>
+
+  <div class="controls">
+    <div class="field">
+      <label for="accountType">Type de compte</label>
+      <select id="accountType" disabled>
+        <option value="">Choisir...</option>
+        <option value="clients">Client</option>
+        <option value="fournisseurs">Fournisseur</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="accountSelect">Compte</label>
+      <select id="accountSelect" disabled>
+        <option value="">Sélectionner un compte...</option>
+      </select>
+      <div class="subtle" id="listInfo"></div>
+    </div>
+  </div>
+
+  <div class="card hidden" id="accountCard">
+    <h3>Compte sélectionné</h3>
+    <table id="accountTable"></table>
+  </div>
 </div>
+
 <script>
 (function(){
-  function normalize(u){ return (u||"").replace(/\/+$/,""); }
-  function escapeHtml(s){
-    return String(s==null?"":s).replace(/[&<>"']/g,function(c){
-      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
-    });
+  function normalize(u){
+    return (u || "").replace(/\/+$/, "");
+  }
+
+  function addRow(table, label, value){
+    if(value === undefined || value === null || String(value).trim() === ""){
+      return;
+    }
+    var tr = document.createElement("tr");
+    var th = document.createElement("th");
+    var td = document.createElement("td");
+    th.textContent = label;
+    td.textContent = value;
+    tr.appendChild(th);
+    tr.appendChild(td);
+    table.appendChild(tr);
+  }
+
+  function setStatus(message, css){
+    var el = document.getElementById("status");
+    el.textContent = message;
+    el.className = "status " + css;
   }
 
   var params = new URLSearchParams(window.location.search);
   var cnx = params.get("CNX") || params.get("cnx") || "";
   var uuid = params.get("UUID") || params.get("uuid") || "";
-  var referrer = document.referrer || "";
-  var apiOverride = params.get("api");
+  var referrer = document.referrer;
   var apiUrl = null;
+  var accountCache = { clients: [], fournisseurs: [] };
 
-  if(apiOverride){
-    apiUrl = normalize(apiOverride);
-  }else if(referrer && cnx){
+  var accountType = document.getElementById("accountType");
+  var accountSelect = document.getElementById("accountSelect");
+  var accountTable = document.getElementById("accountTable");
+  var accountCard = document.getElementById("accountCard");
+  var dossierTable = document.getElementById("dossierTable");
+  var listInfo = document.getElementById("listInfo");
+
+  if(referrer && cnx){
     try{
       var r = new URL(referrer);
       apiUrl = normalize(r.origin + "/" + cnx + "/api");
     }catch(e){}
   }
 
-  var statusEl = document.getElementById("status");
-  var errorEl = document.getElementById("error");
-  var debugEl = document.getElementById("debug");
-  var tableEl = document.getElementById("resultTable");
-
   if(!apiUrl || !uuid){
-    statusEl.textContent = "";
-    errorEl.textContent = "Paramètres CNX ou UUID manquants.";
-    debugEl.textContent = "L'URL doit contenir au minimum CNX et UUID.";
+    setStatus("Paramètres CNX ou UUID manquants", "err");
     return;
   }
 
-  debugEl.textContent = "Endpoint appelé : " + apiUrl + "/v1/sessions/dossier";
-
-  fetch(apiUrl + "/v1/sessions/dossier", {
-    method: "GET",
-    headers: {
-      "accept": "text/plain",
-      "UUID": uuid
-    }
-  })
-  .then(function(r){
-    return r.text().then(function(t){
-      return { ok:r.ok, status:r.status, text:t };
+  function apiGet(path){
+    return fetch(apiUrl + path, {
+      method: "GET",
+      headers: {
+        "accept": "text/plain",
+        "UUID": uuid
+      }
+    }).then(function(r){
+      return r.text().then(function(t){
+        if(!r.ok){
+          throw new Error("Erreur HTTP " + r.status + " sur " + path);
+        }
+        return t;
+      });
     });
-  })
-  .then(function(res){
-    if(!res.ok){
-      throw new Error("Erreur HTTP " + res.status);
-    }
+  }
 
-    var data = JSON.parse(res.text);
-    var rows = [
-      ["Nom", data.Nom],
-      ["Prénom", data.Prenom],
-      ["Adresse ligne 1", data.Adresse1],
-      ["Adresse ligne 2", data.Adresse2],
-      ["Code postal", data.CodePostal],
-      ["Ville", data.Ville],
-      ["Siret", data.SIRET]
-    ];
+  function renderDossier(data){
+    dossierTable.innerHTML = "";
+    addRow(dossierTable, "Nom", data.Nom);
+    addRow(dossierTable, "Prénom", data.Prenom);
+    addRow(dossierTable, "Adresse ligne 1", data.Adresse1);
+    addRow(dossierTable, "Adresse ligne 2", data.Adresse2);
+    addRow(dossierTable, "Code postal", data.CodePostal);
+    addRow(dossierTable, "Ville", data.Ville);
+    addRow(dossierTable, "Siret", data.SIRET);
+  }
 
-    var html = "";
-    rows.forEach(function(row){
-      html += "<tr><th>" + escapeHtml(row[0]) + "</th><td>" + escapeHtml(row[1]) + "</td></tr>";
+  function renderAccount(account){
+    accountTable.innerHTML = "";
+    var tiers = account && account.Tiers ? account.Tiers : {};
+
+    addRow(accountTable, "Code", account ? account.Code : "");
+    addRow(accountTable, "Libellé", account ? account.Lib : "");
+    addRow(accountTable, "Raison sociale", tiers.RaisonSociale);
+    addRow(accountTable, "SIREN", tiers.Siren);
+    addRow(accountTable, "TVA intracom", tiers.NumeroIntracom);
+    addRow(accountTable, "Email", tiers.Email);
+    addRow(accountTable, "Téléphone", tiers.Telephone);
+
+    accountCard.classList.remove("hidden");
+  }
+
+  function buildAccountOptions(type){
+    var items = accountCache[type] || [];
+    accountSelect.innerHTML = '<option value="">Sélectionner un compte...</option>';
+
+    items.forEach(function(item, index){
+      var option = document.createElement("option");
+      option.value = String(index);
+      option.textContent = item.Lib || item.Code || (type === "clients" ? "Client sans libellé" : "Fournisseur sans libellé");
+      accountSelect.appendChild(option);
     });
 
-    tableEl.innerHTML = html;
-    tableEl.classList.remove("hidden");
-    statusEl.innerHTML = '<span class="ok">Connexion SSO valide</span>';
-  })
-  .catch(function(err){
-    statusEl.textContent = "";
-    errorEl.textContent = err.message || "Erreur lors de l'appel API";
+    accountSelect.disabled = items.length === 0;
+    listInfo.textContent = items.length ? (items.length + " compte(s) disponible(s)") : "Aucun compte disponible";
+    accountCard.classList.add("hidden");
+    accountTable.innerHTML = "";
+  }
+
+  function loadAccounts(type){
+    var path = type === "clients" ? "/v1/compta/comptes/clients" : "/v1/compta/comptes/fournisseurs";
+    setStatus("Chargement de la liste des comptes...", "info");
+    accountSelect.disabled = true;
+    accountSelect.innerHTML = '<option value="">Chargement...</option>';
+    accountCard.classList.add("hidden");
+
+    apiGet(path)
+      .then(function(text){
+        var data = JSON.parse(text);
+        if(!Array.isArray(data)){
+          throw new Error("Réponse inattendue pour la liste des comptes");
+        }
+        accountCache[type] = data;
+        buildAccountOptions(type);
+        setStatus("Connexion SSO valide", "ok");
+      })
+      .catch(function(err){
+        accountCache[type] = [];
+        buildAccountOptions(type);
+        setStatus(err.message, "err");
+      });
+  }
+
+  accountType.addEventListener("change", function(){
+    var type = accountType.value;
+    if(!type){
+      accountSelect.disabled = true;
+      accountSelect.innerHTML = '<option value="">Sélectionner un compte...</option>';
+      listInfo.textContent = "";
+      accountCard.classList.add("hidden");
+      accountTable.innerHTML = "";
+      return;
+    }
+    loadAccounts(type);
   });
+
+  accountSelect.addEventListener("change", function(){
+    var type = accountType.value;
+    var idx = accountSelect.value;
+    if(type === "" || idx === ""){
+      accountCard.classList.add("hidden");
+      accountTable.innerHTML = "";
+      return;
+    }
+    renderAccount(accountCache[type][Number(idx)]);
+  });
+
+  setStatus("Chargement du dossier courant...", "info");
+  apiGet("/v1/sessions/dossier")
+    .then(function(text){
+      var dossier = JSON.parse(text);
+      renderDossier(dossier);
+      accountType.disabled = false;
+      setStatus("Connexion SSO valide", "ok");
+    })
+    .catch(function(err){
+      setStatus(err.message, "err");
+    });
 })();
 </script>
 </body>
