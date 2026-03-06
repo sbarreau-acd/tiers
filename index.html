@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -26,7 +25,7 @@ h2{
 }
 .selection-layout{
   display:grid;
-  grid-template-columns: minmax(360px, 430px) minmax(420px, 1fr);
+  grid-template-columns: minmax(420px, 520px) minmax(420px, 1fr);
   gap:18px;
   align-items:start;
   margin-top:18px;
@@ -36,6 +35,9 @@ h2{
   grid-template-columns: 210px minmax(0, 1fr);
   gap:14px;
   align-items:end;
+}
+.field{
+  min-width:0;
 }
 .field label{
   display:block;
@@ -53,8 +55,10 @@ select,input{
   border-radius:8px;
   font:inherit;
   background:#fff;
+  box-sizing:border-box;
 }
-select:disabled{
+select:disabled,
+input:disabled{
   background:#f2f4f8;
   color:#666;
 }
@@ -103,6 +107,71 @@ td{
   background:#fff;
 }
 .hidden{ display:none; }
+
+.autocomplete-wrap{
+  position:relative;
+}
+.autocomplete-list{
+  position:absolute;
+  top:100%;
+  left:0;
+  right:0;
+  z-index:20;
+  margin-top:6px;
+  background:#fff;
+  border:1px solid #cfd6e4;
+  border-radius:8px;
+  box-shadow:0 8px 20px rgba(0,0,0,.08);
+  max-height:320px;
+  overflow-y:auto;
+}
+.autocomplete-item{
+  padding:10px 12px;
+  border-bottom:1px solid #eef2fa;
+  cursor:pointer;
+  background:#fff;
+}
+.autocomplete-item:last-child{
+  border-bottom:none;
+}
+.autocomplete-item:hover,
+.autocomplete-item.active{
+  background:#eef4ff;
+}
+.item-code{
+  font-weight:700;
+  color:#003366;
+}
+.item-name{
+  color:#1f2a44;
+}
+.item-meta{
+  margin-top:2px;
+  font-size:12px;
+  color:#687385;
+}
+.selected-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  margin-top:10px;
+  padding:8px 10px;
+  background:#eef4ff;
+  border:1px solid #cfe0ff;
+  border-radius:999px;
+  color:#003366;
+  font-size:13px;
+  font-weight:600;
+}
+.clear-btn{
+  border:0;
+  background:#003366;
+  color:#fff;
+  border-radius:999px;
+  padding:2px 8px;
+  cursor:pointer;
+  font-size:12px;
+}
 @media (max-width: 900px){
   .selection-layout{
     grid-template-columns: 1fr;
@@ -139,17 +208,15 @@ td{
       </div>
 
       <div class="controls">
-        <div class="field full">
-          <label for="searchInput">Recherche</label>
-          <input id="searchInput" placeholder="Rechercher un compte..." disabled>
-        </div>
-
-        <div class="field full">
-          <label for="accountSelect">Compte</label>
-          <select id="accountSelect" disabled>
-            <option value="">Sélectionner un compte...</option>
-          </select>
+        <div class="field full autocomplete-wrap">
+          <label for="searchInput">Compte</label>
+          <input id="searchInput" placeholder="Rechercher un compte..." autocomplete="off" disabled>
+          <div id="autocompleteList" class="autocomplete-list hidden"></div>
           <div class="subtle" id="listInfo"></div>
+          <div id="selectedPill" class="selected-pill hidden">
+            <span id="selectedText"></span>
+            <button id="clearSelection" class="clear-btn" type="button">Effacer</button>
+          </div>
         </div>
       </div>
 
@@ -194,11 +261,17 @@ var referrer=document.referrer;
 var apiUrl=null;
 
 var accountCache={clients:[],fournisseurs:[]};
-var filteredList=[];
+var displayList=[];
+var currentMatches=[];
+var activeIndex=-1;
+var selectedAccount=null;
 
 var accountType=document.getElementById("accountType");
-var accountSelect=document.getElementById("accountSelect");
 var searchInput=document.getElementById("searchInput");
+var autocompleteList=document.getElementById("autocompleteList");
+var selectedPill=document.getElementById("selectedPill");
+var selectedText=document.getElementById("selectedText");
+var clearSelection=document.getElementById("clearSelection");
 var accountTable=document.getElementById("accountTable");
 var accountCard=document.getElementById("accountCard");
 var dossierTable=document.getElementById("dossierTable");
@@ -243,7 +316,6 @@ function renderDossier(data){
 }
 
 function renderAccount(account){
-
   accountTable.innerHTML="";
   var tiers=account && account.Tiers ? account.Tiers : {};
   var raisonSociale=tiers.RaisonSociale;
@@ -263,137 +335,238 @@ function renderAccount(account){
   accountCard.classList.remove("hidden");
 }
 
-function buildAccountOptions(type){
-
+function makeDisplayList(type){
   var items=accountCache[type]||[];
 
-  filteredList=items.map(function(item,index){
-
+  displayList=items.map(function(item,index){
     var tiers=item.Tiers||{};
-    var displayName=tiers.RaisonSociale && tiers.RaisonSociale.trim()!==""
-      ? tiers.RaisonSociale
-      : item.Lib;
-
+    var displayName=tiers.RaisonSociale && tiers.RaisonSociale.trim()!=="" ? tiers.RaisonSociale : item.Lib;
+    var label=item.Code+" — "+(displayName||"");
     return{
       index:index,
-      code:item.Code,
+      code:item.Code||"",
       name:displayName||"",
-      label:item.Code+" — "+(displayName||"")
+      label:label,
+      searchText:(item.Code+" "+(displayName||"")+" "+(item.Lib||"")).toLowerCase()
     };
-
   });
 
-  filteredList.sort(function(a,b){
-    return a.name.localeCompare(b.name,"fr",{sensitivity:"base"});
+  displayList.sort(function(a,b){
+    var nameCompare=a.name.localeCompare(b.name,"fr",{sensitivity:"base"});
+    if(nameCompare!==0) return nameCompare;
+    return a.code.localeCompare(b.code,"fr",{sensitivity:"base"});
   });
 
-  populateSelect(filteredList);
-
-  searchInput.disabled=false;
+  listInfo.textContent=displayList.length
+    ? displayList.length+" compte(s) disponible(s)"
+    : "Aucun compte disponible";
 }
 
-function populateSelect(list){
+function closeAutocomplete(){
+  autocompleteList.classList.add("hidden");
+  autocompleteList.innerHTML="";
+  activeIndex=-1;
+  currentMatches=[];
+}
 
-  accountSelect.innerHTML='<option value="">Sélectionner un compte...</option>';
+function openAutocomplete(){
+  if(currentMatches.length){
+    autocompleteList.classList.remove("hidden");
+  }
+}
 
-  list.forEach(function(item){
-    var option=document.createElement("option");
-    option.value=item.index;
-    option.textContent=item.label;
-    accountSelect.appendChild(option);
+function renderAutocomplete(matches){
+  autocompleteList.innerHTML="";
+  currentMatches=matches.slice(0,50);
+  activeIndex=-1;
+
+  if(!currentMatches.length){
+    autocompleteList.classList.add("hidden");
+    return;
+  }
+
+  currentMatches.forEach(function(item,index){
+    var row=document.createElement("div");
+    row.className="autocomplete-item";
+    row.setAttribute("data-index", String(index));
+    row.innerHTML=
+      '<div><span class="item-code">'+escapeHtml(item.code)+'</span> <span class="item-name">— '+escapeHtml(item.name)+'</span></div>' +
+      '<div class="item-meta">Recherche sur code, raison sociale et libellé</div>';
+    row.addEventListener("mousedown", function(ev){
+      ev.preventDefault();
+      selectMatch(index);
+    });
+    autocompleteList.appendChild(row);
   });
 
-  accountSelect.disabled=list.length===0;
+  openAutocomplete();
+}
 
-  listInfo.textContent=list.length
-    ? list.length+" compte(s) disponible(s)"
-    : "Aucun compte disponible";
+function updateActiveItem(){
+  var items=autocompleteList.querySelectorAll(".autocomplete-item");
+  items.forEach(function(el,idx){
+    if(idx===activeIndex){
+      el.classList.add("active");
+      el.scrollIntoView({block:"nearest"});
+    }else{
+      el.classList.remove("active");
+    }
+  });
+}
 
+function selectMatch(matchIndex){
+  var match=currentMatches[matchIndex];
+  if(!match) return;
+
+  var type=accountType.value;
+  selectedAccount=accountCache[type][match.index];
+  searchInput.value=match.label;
+  selectedText.textContent=match.label;
+  selectedPill.classList.remove("hidden");
+  closeAutocomplete();
+  renderAccount(selectedAccount);
+}
+
+function clearSelectedAccount(){
+  selectedAccount=null;
+  selectedPill.classList.add("hidden");
+  selectedText.textContent="";
   accountCard.classList.add("hidden");
   accountTable.innerHTML="";
 }
 
-function loadAccounts(type){
+function refreshAutocomplete(){
+  var q=searchInput.value.trim().toLowerCase();
 
+  if(!accountType.value){
+    closeAutocomplete();
+    return;
+  }
+
+  if(!q){
+    renderAutocomplete(displayList.slice(0,50));
+    return;
+  }
+
+  var matches=displayList.filter(function(item){
+    return item.searchText.indexOf(q)!==-1;
+  });
+
+  renderAutocomplete(matches);
+}
+
+function escapeHtml(s){
+  return String(s==null ? "" : s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;","\\"":"&quot;","'":"&#39;"}[c];
+  });
+}
+
+function loadAccounts(type){
   var path=type==="clients"
     ? "/v1/compta/comptes/clients"
     : "/v1/compta/comptes/fournisseurs";
 
   setStatus("Chargement de la liste des comptes...","info");
+  searchInput.disabled=true;
+  searchInput.value="";
+  clearSelectedAccount();
+  closeAutocomplete();
 
   apiGet(path)
     .then(function(text){
-
       var data=JSON.parse(text);
 
-      if(!Array.isArray(data))
+      if(!Array.isArray(data)){
         throw new Error("Réponse inattendue");
+      }
 
       accountCache[type]=data;
-
-      buildAccountOptions(type);
-
+      makeDisplayList(type);
+      searchInput.disabled=false;
+      searchInput.focus();
+      refreshAutocomplete();
       setStatus("Connexion SSO valide","ok");
-
     })
     .catch(function(err){
       setStatus(err.message,"err");
+      listInfo.textContent="";
+      searchInput.disabled=true;
+      closeAutocomplete();
     });
 }
 
 accountType.addEventListener("change",function(){
-
   var type=accountType.value;
+  searchInput.value="";
+  clearSelectedAccount();
 
   if(!type){
-    accountSelect.disabled=true;
     searchInput.disabled=true;
+    closeAutocomplete();
+    listInfo.textContent="";
     return;
   }
 
   loadAccounts(type);
-
 });
 
-accountSelect.addEventListener("change",function(){
-
-  var type=accountType.value;
-  var idx=accountSelect.value;
-
-  if(type==="" || idx===""){
-    accountCard.classList.add("hidden");
-    return;
+searchInput.addEventListener("focus", function(){
+  if(!searchInput.disabled){
+    refreshAutocomplete();
   }
-
-  renderAccount(accountCache[type][Number(idx)]);
-
 });
 
-searchInput.addEventListener("input",function(){
+searchInput.addEventListener("input", function(){
+  clearSelectedAccount();
+  refreshAutocomplete();
+});
 
-  var q=searchInput.value.toLowerCase();
+searchInput.addEventListener("keydown", function(e){
+  if(autocompleteList.classList.contains("hidden")) return;
 
-  var list=filteredList.filter(function(item){
-    return item.label.toLowerCase().includes(q);
-  });
+  if(e.key==="ArrowDown"){
+    e.preventDefault();
+    if(activeIndex < currentMatches.length - 1){
+      activeIndex++;
+      updateActiveItem();
+    }
+  }else if(e.key==="ArrowUp"){
+    e.preventDefault();
+    if(activeIndex > 0){
+      activeIndex--;
+      updateActiveItem();
+    }
+  }else if(e.key==="Enter"){
+    if(activeIndex >= 0){
+      e.preventDefault();
+      selectMatch(activeIndex);
+    }
+  }else if(e.key==="Escape"){
+    closeAutocomplete();
+  }
+});
 
-  populateSelect(list);
+clearSelection.addEventListener("click", function(){
+  searchInput.value="";
+  clearSelectedAccount();
+  searchInput.focus();
+  refreshAutocomplete();
+});
 
+document.addEventListener("click", function(e){
+  if(!e.target.closest(".autocomplete-wrap")){
+    closeAutocomplete();
+  }
 });
 
 setStatus("Chargement du dossier courant...","info");
 
 apiGet("/v1/sessions/dossier")
   .then(function(text){
-
     var dossier=JSON.parse(text);
-
     renderDossier(dossier);
-
     accountType.disabled=false;
-
     setStatus("Connexion SSO valide","ok");
-
   })
   .catch(function(err){
     setStatus(err.message,"err");
