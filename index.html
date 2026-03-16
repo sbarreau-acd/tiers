@@ -219,7 +219,7 @@ function normalizeApiUrl(url){
   return s;
 }
 function exportCsv(type){
-  var rows=[["Type","Code","Libellé","Raison sociale","SIRET","TVA Intracom","Email","Téléphone"].map(csvEscape).join(";")];
+  var rows=[["Type","Code","Libellé","Raison sociale","SIREN","TVA Intracom","Email","Téléphone"].map(csvEscape).join(";")];
   allAccounts.filter(function(a){return a.type===type;}).sort(function(a,b){
     return (a.name||"").localeCompare(b.name||"","fr",{sensitivity:"base"});
   }).forEach(function(a){
@@ -258,7 +258,7 @@ function formatEuro(v){
 function renderDossier(d){
   dossierTable.innerHTML="";
   dossierTable.insertAdjacentHTML("beforeend",
-    "<tr><th>Nom</th><td>"+escapeHtml(d.Nom||"")+"</td><th>SIRET</th><td>"+escapeHtml(d.SIRET||"")+"</td></tr>"+
+    "<tr><th>Nom</th><td>"+escapeHtml(d.Nom||"")+"</td><th>SIREN</th><td>"+escapeHtml(d.siren||"")+"</td></tr>"+
     "<tr><th>Adresse</th><td colspan='3'>"+escapeHtml(((d.Adresse1||"")+" "+(d.Adresse2||"")).trim())+"</td></tr>"+
     "<tr><th>Code postal</th><td>"+escapeHtml(d.CodePostal||"")+"</td><th>Ville</th><td>"+escapeHtml(d.Ville||"")+"</td></tr>"
   );
@@ -396,9 +396,9 @@ function renderInsee(data){
 function fetchInseeForAccount(a){
   clearInsee();
   var t=a&&a.Tiers?a.Tiers:{};
-  var siret=(t.Siren||t.SIREN||"").toString().trim();
-  if(!siret) return;
-  var url="https://recherche-entreprises.api.gouv.fr/search?q="+encodeURIComponent(siret)+"&type_personne=dirigeant&limite_matching_etablissements=1&minimal=true&include=siege%2Cfinances&page=1&per_page=10&page_etablissements=1";
+  var siren=(t.Siren||t.SIREN||"").toString().trim();
+  if(!siren) return;
+  var url="https://recherche-entreprises.api.gouv.fr/search?q="+encodeURIComponent(siren)+"&type_personne=dirigeant&limite_matching_etablissements=1&minimal=true&include=siege%2Cfinances&page=1&per_page=10&page_etablissements=1";
   fetch(url,{method:"GET",headers:{accept:"application/json"}})
     .then(function(r){ if(!r.ok) throw new Error("Erreur recherche-entreprises HTTP "+r.status); return r.json(); })
     .then(renderInsee)
